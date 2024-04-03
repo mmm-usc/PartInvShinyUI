@@ -60,7 +60,7 @@ NULL
 #'         \item{cutpt_xi}{Cut point on the latent scale (xi).}
 #'         \item{cutpt_z}{Cut point on the observed scale (Z).}
 #'         \item{summary}{A `8 x (g + g - 1)` table, with columns representing
-#'             the reference and `g - 1` focal groups, and the expected results
+#'             the reference and `g - 1` focal groups, and  the expected results
 #'             if the latent distribution of `g - 1` focal group match the
 #'             reference group. The rows represent probabilities of true
 #'             positive (A), false positive (B), true negative (C), false
@@ -89,6 +89,8 @@ NULL
 #'          \item{bivardata_mi}{List of length `5` containing `1 x g` vectors of
 #'             latent and observed means, standard deviations, and covariances
 #'             computed for each group under strict invariance.}
+#'          \item{labels}{List of labels.}
+#'          \item{functioncall}{Function call to PartInv.}   
 #' @examples
 #' # Two groups, single dimension
 #' PartInv(propsel = .30,
@@ -167,6 +169,7 @@ PartInv <- function(propsel = NULL, cut_z = NULL,
                     Theta_r = NULL, Theta_f = Theta_r,
                     ...) {
 
+  functioncall <- match.call()
   # for backward compatibility with different input names
   if (missing(nu) && !is.null(nu_r)) {
     nu <- vector(2, mode = "list")
@@ -319,6 +322,7 @@ PartInv <- function(propsel = NULL, cut_z = NULL,
     }
   }
   out[["labels"]] <- labels
+  out[["functioncall"]] <- functioncall
   class(out) <- "PartInv"
   out
 }

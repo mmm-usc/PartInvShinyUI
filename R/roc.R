@@ -22,20 +22,21 @@ auc <- function(SE, SP){
 #' @return The output will be a list.
 #' @export
 return_SE_SP <- function(cfa_fit,
+                         PartInv_fit,
                          pmix, 
                          from = 0.01,
                          to = 0.25,
                          by = 0.01,
                          cutoffs_from = NULL,
                          cutoffs_to = NULL,
-                         mod_names = c("par", "str"), 
+                         mod_names = c("partial", "strict"), 
                          alpha = NULL,
                          lambda = NULL, 
                          theta = NULL,
                          psi = NULL,
                          nu = NULL, ...) {
   
-  if(!missing(cfa_fit)) {
+  if(!missing(cfa_fit) && missing(PartInv_fit)) {
     est <- format_cfa_partinv(cfa_fit, comp = "est")
     n_g <- cfa_fit@Data@ngroups # number of groups
     psi <- est$psi
@@ -44,7 +45,16 @@ return_SE_SP <- function(cfa_fit,
     alpha <- est$alpha
     nu <- est$nu
   }
-  if(missing(cfa_fit) & !is.null(alpha) & !is.null(psi) & 
+  if(missing(cfa_fit) && !missing(PartInv_fit)) {
+    n_g <- length(PartInv_fit$labels) # number of groups
+    psi <- eval(PartInv_fit$functioncall$psi)
+    lambda <- eval(PartInv_fit$functioncall$lambda)
+    theta <- eval(PartInv_fit$functioncall$theta)
+    alpha <- eval(PartInv_fit$functioncall$alpha)
+    nu <- eval(PartInv_fit$functioncall$nu)
+  }
+  
+  if(missing(cfa_fit) & missing(PartInv_fit) & !is.null(alpha) & !is.null(psi) & 
      !is.null(lambda) & !is.null(theta)  & !is.null(nu)) {
     n_g <- length(alpha) # number of groups
   }
@@ -86,7 +96,7 @@ return_SE_SP <- function(cfa_fit,
   names(vals) <- ls_names
   
   # if pmix is missing, assume equal mixing proportions
-  if (is.null(pmix)) pmix <- as.matrix(c(rep(1 / n_g, n_g)), ncol = n_g)
+  if (missing(pmix)) pmix <- as.matrix(c(rep(1 / n_g, n_g)), ncol = n_g)
   pmix <- as.vector(pmix)
   
   ylabs <- ""
@@ -136,7 +146,7 @@ return_SE_SP <- function(cfa_fit,
         for (j in seq_along(mod_names)) {
           # if the specified invariance condition is partial invariance,
           vals[[ind]][, p] <-
-            ifelse(rep(mod_names[j] == "par", n_g),
+            ifelse(rep(mod_names[j] == "partial", n_g),
                    as.numeric(pinv$summary[i, 1:n_g]),
                    as.numeric(pinv$summary_mi[i, 1:n_g]))
           
@@ -200,18 +210,37 @@ return_SE_SP <- function(cfa_fit,
 #'                     theta = list(theta_matrix, theta_matrix1, theta_matrix2,
 #'                                  theta_matrix3),
 #'                     plot_contour = FALSE, show_mi_result = TRUE, 
-#'                     mod_names = c("str", "par"))
+#'                     mod_names = c("strict", "partial"))
 #' roc_auc_PartInv(out, plot_mods = c("strict", "partial"))
 #' roc_auc_PartInv(out, plot_mods = c("partial"))
 #' @export
-roc_auc_PartInv <- function(return_SE_SP_output, 
+roc_auc_PartInv <- function(cfa_fit = NULL, PartInv_fit = NULL,
+                            return_SE_SP_output = NULL, 
                             plot_mods = c("partial", "strict"),
-                            plot_group = NULL, ...){
-  if(is.null(plot_group)){
+                            plot_group = NULL, ...) {
+  out <- ""
+  if(!is.null(cfa_fit) & is.null(return_SE_SP_output) & is.null(PartInv_fit)) {
+    out <- return_SE_SP(cfa_fit, mod_names = plot_mods)
+  }
+  if(is.null(cfa_fit) & is.null(return_SE_SP_output) & !is.null(PartInv_fit)) {
+    # since PartInv needs to be called repeatedly, we extract the relevant 
+    # parameters from the cfa fit
+    call_cfa <- eval(PartInv_fit$functioncall)
+    out <- return_SE_SP(call_cfa, mod_names = plot_mods)
+  }
+  if(is.null(cfa_fit) & is.null(PartInv_fit) & !is.null(return_SE_SP_output)) {
+    out <- return_SE_SP_output
+  }
+  if(sum(c(!is.null(cfa_fit),!is.null(return_SE_SP_output), 
+           !is.null(PartInv_fit))) > 1) {
+    out <- return_SE_SP_output
+    warning('Please only provide one of PartInv_fit, cfa_fit and return_SE_SP_output.')
+  }
+ 
+  if(is.null(plot_group)) {
     plot_group <- c(1:length(rownames(out[1][[1]])))
   }
   
-  out <- return_SE_SP_output
   labx <- "FPR (1-SP)"
   laby <- "TPR (SE)"
   SEs <- SPs <- data.frame()

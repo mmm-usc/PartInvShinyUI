@@ -35,7 +35,8 @@ setClass("PartInv",
            cutpt_xi_mi = "numeric", cutpt_z_mi = "numeric",
            bivar_data_mi = "list",
            summary_mi = "data.frame",
-           labels = "character"
+           labels = "character", 
+           functioncall = "character"
          )
 )
 #'@export

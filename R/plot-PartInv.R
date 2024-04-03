@@ -22,7 +22,7 @@ NULL
 #' \dontrun{
 #' contour_bvnorm(
 #'   0.5, 1, 0.57, 1.03, cov12 = 0.8,
-#'   xlab = bquote("Latent Composite" ~ (zeta)),
+#'   xlab = bquote("Latent Composite" ~ (eta)),
 #'   ylab = bquote("Observed Composite" ~ (italic(Z))),
 #'   lwd = 2, col = "red", xlim = c(-3.0, 3.5),
 #'   ylim = c(-2.97, 3.67)
