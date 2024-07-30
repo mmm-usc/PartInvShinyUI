@@ -179,40 +179,40 @@ return_SE_SP <- function(cfa_fit,
 #'
 #' @examples 
 #' # Multiple groups, multiple dimensions
-#' lambda_matrix <- matrix(0, nrow = 15, ncol = 1)
-#' lambda_matrix[1:15, 1] <- c(0.68, 0.79, -0.39, 0.74, 0.59, 0.46, 0.78, -0.30,
-#'                             0.59, 0.59, 0.64, 0.66, 0.59, 0.63, 0.64);
-#' nu_matrix <- nu_matrix1 <- nu_matrix2 <- nu_matrix3 <-
-#'   matrix(0, nrow = 15, ncol = 1)
-#' nu_matrix[1:15, 1] <- c(3.6, 3.1, 2.7, 2.9, 2.5, 2.1, 3.45, 2.62, 3.2, 2.84,
-#'                         3.51, 3.26, 2.45, 3.39, 2.47);
-#' nu_matrix1[1:15, 1] <- c(3.9, 3.1, 2.7, 2.9, 2.5, 2.1, 3.45, 2.62, 3.2, 2.84,
-#'                          3.51, 3.26, 2.45, 3.76, 2.81);
-#' nu_matrix2[1:15, 1] <- c(3.6, 3.1, 2.7, 2.9, 2.5, 2.1, 3.45, 2.62, 3.6, 3.18,
-#'                          3.51, 3.54, 2.45, 3.39, 2.81);
-#' nu_matrix3[1:15, 1] <- c(3.6, 3.1, 2.7, 2.6, 2.5, 2.1, 3.45, 2.62, 3.2, 2.84,
-#'                          3.51, 3.26, 2.45, 3.39, 2.81);
-#' theta_matrix <- c(0.35, 0.62, 0.83, 0.61, 0.81, 0.87, 0.39, 1.05, 0.84, 0.92,
-#'                   0.36, 0.66, 0.8, 0.66, 0.9);
-#' theta_matrix1 <- c(0.61, 0.62, 0.83, 0.61, 0.81, 0.5, 0.7, 1.05, 0.84, 0.92,
-#'                    0.61, 0.66, 0.8, 0.54, 0.9);
-#' theta_matrix2 <- c(0.61, 0.62, 0.826, 0.61, 0.81, 0.87, 0.5, 1.05, 0.84,
-#'                    0.92, 0.61, 0.66, 0.8, 0.66, 0.9);
-#' theta_matrix3 <- c(0.61, 0.62, 0.826, 0.61, 0.81, 0.5, 0.7, 1.05, 0.84, 0.92,
-#'                    0.61, 0.66, 0.8, 0.66, 0.9);
-#' out <- return_SE_SP(from = 0.00001, to = 0.999999999999999, by = 0.001, 
-#'                     pmix = c(1/4, 1/4, 1/4, 1/4), 
-#'                     alpha = list(0, -0.70, -1.05, -1.10), 
-#'                     psi = list(1, 1.2, 1.29, 1.3),
-#'                     nu = list(nu_matrix, nu_matrix1, nu_matrix2, nu_matrix3),
-#'                     lambda = list(lambda_matrix, lambda_matrix, lambda_matrix,
-#'                                   lambda_matrix),
-#'                     theta = list(theta_matrix, theta_matrix1, theta_matrix2,
-#'                                  theta_matrix3),
-#'                     plot_contour = FALSE, show_mi_result = TRUE, 
-#'                     mod_names = c("strict", "partial"))
-#' roc_auc_PartInv(out, plot_mods = c("strict", "partial"))
-#' roc_auc_PartInv(out, plot_mods = c("partial"))
+lambda_matrix <- matrix(0, nrow = 15, ncol = 1)
+lambda_matrix[1:15, 1] <- c(0.68, 0.79, -0.39, 0.74, 0.59, 0.46, 0.78, -0.30,
+                            0.59, 0.59, 0.64, 0.66, 0.59, 0.63, 0.64);
+nu_matrix <- nu_matrix1 <- nu_matrix2 <- nu_matrix3 <-
+  matrix(0, nrow = 15, ncol = 1)
+nu_matrix[1:15, 1] <- c(3.6, 3.1, 2.7, 2.9, 2.5, 2.1, 3.45, 2.62, 3.2, 2.84,
+                        3.51, 3.26, 2.45, 3.39, 2.47);
+nu_matrix1[1:15, 1] <- c(3.9, 3.1, 2.7, 2.9, 2.5, 2.1, 3.45, 2.62, 3.2, 2.84,
+                         3.51, 3.26, 2.45, 3.76, 2.81);
+nu_matrix2[1:15, 1] <- c(3.6, 3.1, 2.7, 2.9, 2.5, 2.1, 3.45, 2.62, 3.6, 3.18,
+                         3.51, 3.54, 2.45, 3.39, 2.81);
+nu_matrix3[1:15, 1] <- c(3.6, 3.1, 2.7, 2.6, 2.5, 2.1, 3.45, 2.62, 3.2, 2.84,
+                         3.51, 3.26, 2.45, 3.39, 2.81);
+theta_matrix <- c(0.35, 0.62, 0.83, 0.61, 0.81, 0.87, 0.39, 1.05, 0.84, 0.92,
+                  0.36, 0.66, 0.8, 0.66, 0.9);
+theta_matrix1 <- c(0.61, 0.62, 0.83, 0.61, 0.81, 0.5, 0.7, 1.05, 0.84, 0.92,
+                   0.61, 0.66, 0.8, 0.54, 0.9);
+theta_matrix2 <- c(0.61, 0.62, 0.826, 0.61, 0.81, 0.87, 0.5, 1.05, 0.84,
+                   0.92, 0.61, 0.66, 0.8, 0.66, 0.9);
+theta_matrix3 <- c(0.61, 0.62, 0.826, 0.61, 0.81, 0.5, 0.7, 1.05, 0.84, 0.92,
+                   0.61, 0.66, 0.8, 0.66, 0.9);
+out <- return_SE_SP(from = 0.00001, to = 0.999999999999999, by = 0.001,
+                    pmix = c(1/4, 1/4, 1/4, 1/4),
+                    alpha = list(0, -0.70, -1.05, -1.10),
+                    psi = list(1, 1.2, 1.29, 1.3),
+                    nu = list(nu_matrix, nu_matrix1, nu_matrix2, nu_matrix3),
+                    lambda = list(lambda_matrix, lambda_matrix, lambda_matrix,
+                                  lambda_matrix),
+                    theta = list(theta_matrix, theta_matrix1, theta_matrix2,
+                                 theta_matrix3),
+                    plot_contour = FALSE, show_mi_result = TRUE,
+                    mod_names = c("strict", "partial"))
+roc_auc_PartInv(out, plot_mods = c("strict", "partial"))
+roc_auc_PartInv(out, plot_mods = c("partial"))
 #' @export
 roc_auc_PartInv <- function(cfa_fit = NULL, PartInv_fit = NULL,
                             return_SE_SP_output = NULL, 
