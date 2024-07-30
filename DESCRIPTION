@@ -36,7 +36,6 @@ Suggests:
     shinytest,
     rmarkdown,
     knitr,
-    lavaan,
     readxl,
     sjmisc
 Imports: 
@@ -46,6 +45,7 @@ Imports:
     shinydashboard,
     shinyjs,
     shinyMatrix,
-    shinyWidgets
+    shinyWidgets,
+    lavaan
 VignetteBuilder: knitr
 Config/testthat/edition: 3

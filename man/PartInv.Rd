@@ -108,7 +108,7 @@ The output will be a list of six elements and a plot if
 \item{cutpt_xi}{Cut point on the latent scale (xi).}
 \item{cutpt_z}{Cut point on the observed scale (Z).}
 \item{summary}{A \verb{8 x (g + g - 1)} table, with columns representing
-the reference and \code{g - 1} focal groups, and the expected results
+the reference and \code{g - 1} focal groups, and  the expected results
 if the latent distribution of \code{g - 1} focal group match the
 reference group. The rows represent probabilities of true
 positive (A), false positive (B), true negative (C), false
@@ -137,6 +137,8 @@ success ratio, sensitivity, and specificity.}
 \item{bivardata_mi}{List of length \code{5} containing \verb{1 x g} vectors of
 latent and observed means, standard deviations, and covariances
 computed for each group under strict invariance.}
+\item{labels}{List of labels.}
+\item{functioncall}{Function call to PartInv.}
 }
 \description{
 \code{PartInv, PartInvMulti_we} evaluates partial measurement invariance
