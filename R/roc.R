@@ -50,6 +50,7 @@ auc <- function(SE, SP) {
 #'     matrices of unique factor variances and covariances, where `g` is the
 #'     number of groups and `n` is the number of items in the scale. The first
 #'     element is assumed to belong to the reference group.
+#' @param labels Group labels. NULL as default. 
 #' @param ... Other arguments passed to the \code{\link[graphics]{contour}}
 #'     function.
 #' @return The output will be a list containing the SE and SP values under 
@@ -73,7 +74,7 @@ auc <- function(SE, SP) {
 #'                    nu = list(nu_vec, nu_vec1, nu_vec2, nu_vec3),
 #'                    lambda = list(lam_vec, lam_vec, lam_vec, lam_vec),
 #'                    theta = list(theta_vec, theta_vec1, theta_vec2, theta_vec3),
-#'                   plot_contour = FALSE, show_mi_result = TRUE,
+#'                    plot_contour = FALSE, show_mi_result = TRUE,
 #'                    mod_names = c("strict", "partial"))
 #' str(out)
 #' # when PartInv output is provided as input
@@ -113,7 +114,9 @@ return_SE_SP <- function(cfa_fit,
                          lambda = NULL,
                          theta = NULL,
                          psi = NULL,
-                         nu = NULL, ...) {
+                         nu = NULL, 
+                         labels = NULL,
+                         ...) {
   # if the user provided the output from cfa()
   if(!missing(cfa_fit) && missing(PartInv_fit)) {
     est <- format_cfa_partinv(cfa_fit, comp = "est")
@@ -127,6 +130,9 @@ return_SE_SP <- function(cfa_fit,
   # if the user provided the output from PartInv
   if(missing(cfa_fit) && !missing(PartInv_fit)) {
     n_g <- length(PartInv_fit$labels) # number of groups
+    if(is.null(labels)) {
+      labels <- PartInv_fit$labels
+    }
     psi <- eval(PartInv_fit$functioncall$psi)
     lambda <- eval(PartInv_fit$functioncall$lambda)
     theta <- eval(PartInv_fit$functioncall$theta)
@@ -147,7 +153,7 @@ return_SE_SP <- function(cfa_fit,
   
   propsels <- seq(from = from, to = to, by = by)
   use <- "propsels" # set to use proportion of selection by default
-  xl <- "Proportion of selection"
+ # xl <- "Proportion of selection"
   rangeVals <- propsels
 
   # if the user provided the max and min cutoff values, update rangeVals with
@@ -155,21 +161,28 @@ return_SE_SP <- function(cfa_fit,
   if (!is.null(cutoffs_from) && !is.null(cutoffs_to)) {
     cutoffs <- seq(from = cutoffs_from, to = cutoffs_to, by = by)
     rangeVals <- cutoffs
-    xl <- "Thresholds" # for the plots later
+  # xl <- "Thresholds" # for the plots later -- might want to add more 
+    # detailed captions using this info
     use <- "cutoffs" # update to use cutoffs instead
   }
-
+  
+  # give a warning to the user if the number of labels does not match the 
+  # number of groups
+  if(!is.null(labels) && length(labels) != n_g) {
+    warning('Please provide the correct number of labels.')
+  }
+  
   # if the user did not provide labels, or provided the wrong number of labels,
   # and the cfa output was provided, extract relevant info from the output
   # to create labels
-  if ((is.null(labels) || (length(labels) != n_g)) && !missing(cfa_fit)) {
-    labels <- cfa_fit@Data@group.label
-    labels <- paste(labels, c("(reference)", rep("(focal)", n_g - 1)))
-  }
-  # if the user did not provide labels, or provided the wrong number of labels,
-  # but the cfa output was not provided, make up group labels with 'Group'
-  if ((is.null(labels) || (length(labels) != n_g)) && missing(cfa_fit)) {
-    labels <- paste(rep("Group"), seq(1:n_g))
+  if ((is.null(labels) || (length(labels) != n_g))) {
+    if(!missing(cfa_fit)){
+      labels <- cfa_fit@Data@group.label
+    }
+    # if the cfa output was not provided, make up group labels with 'Group'
+    if(missing(cfa_fit)){
+      labels <- paste(rep("Group"), seq(1:n_g))
+    }
     labels <- paste(labels, c("(reference)", rep("(focal)", n_g - 1)))
   }
 
@@ -183,9 +196,6 @@ return_SE_SP <- function(cfa_fit,
   # if pmix is missing, assume equal mixing proportions
   if (missing(pmix)) pmix <- as.matrix(c(rep(1 / n_g, n_g)), ncol = n_g)
   pmix <- as.vector(pmix)
-
-  ylabs <- ""
-  mains <- ""
 
   # call PartInv with each proportion of selection and store CAI in the list of
   # data frames
@@ -384,5 +394,4 @@ roc_auc_PartInv <- function(cfa_fit = NULL, PartInv_fit = NULL,
   names(AUCs) <- c(paste0("AUC under ", plot_mods, " invariance"))
   return(AUCs)
 }
-
 
