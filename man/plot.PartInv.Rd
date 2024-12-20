@@ -4,13 +4,7 @@
 \alias{plot.PartInv}
 \title{Contour plots for multiple groups.}
 \usage{
-\method{plot}{PartInv}(
-  x,
-  labels = x[["labels"]],
-  which_result = c("pi", "mi"),
-  custom_colors = NULL,
-  ...
-)
+\method{plot}{PartInv}(x, labels = x[["labels"]], which_result = NULL, custom_colors = NULL, ...)
 }
 \arguments{
 \item{x}{PartInv output.}

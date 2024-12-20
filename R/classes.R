@@ -1,11 +1,13 @@
 #' @importFrom methods setClass
 
+# classes: PartInv, PartInvGroups, PartInvList, itemdeletion
+
+
 # dividers
 stars <-
   "***********************************************************************"
 dashes <-
   "-----------------------------------------------------------------------"
-
 
 summary_print <- function(x, ...) {
   rownames(x) <- c("True Positive", "False Positive", "True Negative",
@@ -14,7 +16,9 @@ summary_print <- function(x, ...) {
   print(round(x, digits = 3))
 }
 
-setClass("PartInvGroups", representation(tab = "data.frame"))
+setClass("PartInvGroups", 
+         representation(tab = "data.frame")
+         )
 
 #'@export
 print.PartInvGroups <- function(x, ...) {
@@ -25,20 +29,59 @@ print.PartInvGroups <- function(x, ...) {
 }
 
 setClass("PartInv",
-         representation(
-           propsel = "numeric",
-           cutpt_xi = "numeric", cutpt_z = "numeric",
-           summary = "data.frame",
-           bivar_data = "list",
-           ai_ratio = "numeric",
-           propsel_mi = "numeric",
-           cutpt_xi_mi = "numeric", cutpt_z_mi = "numeric",
-           bivar_data_mi = "list",
-           summary_mi = "data.frame",
-           labels = "character", 
-           functioncall = "character"
-         )
+  representation(
+    propsel = "numeric",
+    cutpt_xi = "numeric", cutpt_z = "numeric",
+    summary = "data.frame",
+    bivar_data = "list",
+    ai_ratio = "numeric",
+    propsel_mi = "numeric",
+    cutpt_xi_mi = "numeric", cutpt_z_mi = "numeric",
+    bivar_data_mi = "list",
+    summary_mi = "data.frame",
+    labels = "character", 
+    functioncall = "character"
+  )
 )
+#' @method print PartInv 
+#' @title Print method for PartInv class
+#' @description performs printing and formatting on an PartInv object.
+#' @param x An object of class \code{PartInv}, the output from
+#'  \code{PartInv()}.
+#' @param ... Additional arguments passed to methods.
+#' @return NULL
+#' 
+#' @examples
+#' lambda_matrix <- matrix(0, nrow = 15, ncol = 1)
+#' lambda_matrix[1:15, 1] <- c(0.68, 0.79, -0.39, 0.74, 0.59, 0.46, 0.78, -0.30,
+#'                             0.59, 0.59, 0.64, 0.66, 0.59, 0.63, 0.64);
+#' nu_matrix <- nu_matrix1 <- nu_matrix2 <- nu_matrix3 <-
+#'   matrix(0, nrow = 15, ncol = 1)
+#' nu_matrix[1:15, 1] <- c(3.6, 3.1, 2.7, 2.9, 2.5, 2.1, 3.45, 2.62, 3.2, 2.84,
+#'                         3.51, 3.26, 2.45, 3.39, 2.47);
+#' nu_matrix1[1:15, 1] <- c(3.9, 3.1, 2.7, 2.9, 2.5, 2.1, 3.45, 2.62, 3.2, 2.84,
+#'                          3.51, 3.26, 2.45, 3.76, 2.81);
+#' nu_matrix2[1:15, 1] <- c(3.6, 3.1, 2.7, 2.9, 2.5, 2.1, 3.45, 2.62, 3.6, 3.18,
+#'                          3.51, 3.54, 2.45, 3.39, 2.81);
+#' nu_matrix3[1:15, 1] <- c(3.6, 3.1, 2.7, 2.6, 2.5, 2.1, 3.45, 2.62, 3.2, 2.84,
+#'                          3.51, 3.26, 2.45, 3.39, 2.81);
+#' theta_matrix <- c(0.35, 0.62, 0.83, 0.61, 0.81, 0.87, 0.39, 1.05, 0.84, 0.92,
+#'                   0.36, 0.66, 0.8, 0.66, 0.9);
+#' theta_matrix1 <- c(0.61, 0.62, 0.83, 0.61, 0.81, 0.5, 0.7, 1.05, 0.84, 0.92,
+#'                    0.61, 0.66, 0.8, 0.54, 0.9);
+#' theta_matrix2 <- c(0.61, 0.62, 0.826, 0.61, 0.81, 0.87, 0.5, 1.05, 0.84,
+#'                    0.92, 0.61, 0.66, 0.8, 0.66, 0.9);
+#' theta_matrix3 <- c(0.61, 0.62, 0.826, 0.61, 0.81, 0.5, 0.7, 1.05, 0.84, 0.92,
+#'                    0.61, 0.66, 0.8, 0.66, 0.9);
+#' out <- PartInv(propsel = 0.25, pmix = c(1/4, 1/4, 1/4, 1/4),
+#'   alpha = list(0, -0.70, -1.05, -1.10), psi = list(1, 1.2, 1.29, 1.3),
+#'   nu = list(nu_matrix, nu_matrix1, nu_matrix2, nu_matrix3),
+#'   lambda = list(lambda_matrix, lambda_matrix, lambda_matrix, lambda_matrix),
+#'   theta = list(theta_matrix, theta_matrix1, theta_matrix2, theta_matrix3),
+#'   plot_contour = TRUE, show_mi_result = TRUE,
+#'   labels = c("Group 1", "Group 2", "Group 3", "Group 4"),
+#'   custom_colors = c("salmon1", "lightgreen", "skyblue1", "pink"))
+#'
 #'@export
 print.PartInv <- function(x, ...) {
   cat("Partial invariance results:\n\n")
@@ -71,11 +114,13 @@ print.PartInv <- function(x, ...) {
 }
 
 setClass("PartInvList",
-         representation(
-           outputlist = "list",
-           condition = "character",
-           itemset = "vector")
+  representation(
+    outputlist = "list",
+    condition = "character",
+    itemset = "vector"
+    )
 )
+
 
 #'@export
 print.PartInvList <- function(x, ...) {
@@ -146,29 +191,85 @@ setClass("itemdeletion",
     )
 )
 
+#' @method print itemdeletion 
+#' @title Print method for itemdeletion class
+#' @description performs printing and formatting on an itemdeletion object.
+#' @param x An object of class \code{itemdeletion}, the output from
+#'  \code{item_deletion_h()}.
+#' @param ... Additional arguments passed to methods.
+#' @return NULL
+#' 
+#' @examples
+#' # Multidimensional example
+#' lambda_matrix <- matrix(0, nrow = 5, ncol = 2)
+#' lambda_matrix[1:2, 1] <- c(.322, .655)
+#' lambda_matrix[3:5, 2] <- c(.398, .745, .543)
+#' multi_dim <- item_deletion_h(propsel = .05, n_dim = 5,
+#'                              weights_item = c(1/4, 1/4, 1/6, 1/6, 1/6),
+#'                              weights_latent = c(0.5, 0.5),
+#'                              alpha_r = c(0, 0),
+#'                              alpha_f = c(-0.3, 0.1),
+#'                              psi_r = matrix(c(1, 0.5, 0.5, 1), nrow = 2),
+#'                              lambda_r = lambda_matrix,
+#'                              nu_r = c(.225, .025, .010, .240, .125),
+#'                              nu_f = c(.225, -.05, .240, -.025, .125),
+#'                              Theta_r = diag(1, 5),
+#'                              Theta_f = diag(c(1, .95, .80, .75, 1)),
+#'                              plot_contour = TRUE)
+#' print(multi_dim)
 #'@export
 print.itemdeletion <- function(x, ...) {
   item_set <- x$return_items
-    cat(paste0(stars, "\nAGGREGATE CLASSIFICATION ACCURACY INDICES (CAI*)\n",
-               stars))
-    cat("\nAggregate CAI under PFI computed for item subsets:\n")
-    print(round(x$`ACAI`[c(1, item_set + 1), , drop = FALSE], 3))
-    cat("\nImpact of deleting an item on aggregate CAI under PFI:\n")
-    print(round(x$`h ACAI (deletion)`[c(item_set), , drop = FALSE], 3))
-    cat(paste0("\n", stars, "\nAdverse Impact (AI) ratio for item subsets by 
-               invariance condition:\n", stars, "\n"))
-    print(round(x$AI[c(1, item_set + 1), , drop = FALSE], 3))
-    cat(paste0("\n", stars, "\nCOMPARING CAI FOR REFERENCE AND (EXPECTED) FOCAL
-               GROUPS\n", stars))
-    cat("\nDiscrepancy between CAI of reference vs. Efocal groups under PFI:\n")
-    print(round(x$`h CAI Ref-EF`[c(1, item_set + 1), 5:8, drop = FALSE], 3))
-    cat(paste0(dashes, "\nImpact of deleting an item on the discrepancy between
-               CAI of\nreference vs. Efocal groups under PFI:\n"))
-    print(round(x$`delta h CAI Ref-EF (deletion)`[c(item_set), 5:8,
-                                                  drop = FALSE], 3))
+  cat(paste0(stars, "\nAGGREGATE CLASSIFICATION ACCURACY INDICES (CAI*)\n",
+             stars))
+  cat("\nAggregate CAI under PFI computed for item subsets:\n")
+  print(round(x$`ACAI`[c(1, item_set + 1), , drop = FALSE], 3))
+  cat("\nImpact of deleting an item on aggregate CAI under PFI:\n")
+  print(round(x$`h ACAI (deletion)`[c(item_set), , drop = FALSE], 3))
+  cat(paste0("\n", stars, "\nAdverse Impact (AI) ratio for item subsets by 
+             invariance condition:\n", stars, "\n"))
+  print(round(x$AI[c(1, item_set + 1), , drop = FALSE], 3))
+  cat(paste0("\n", stars, "\nCOMPARING CAI FOR REFERENCE AND (EXPECTED) FOCAL
+             GROUPS\n", stars))
+  cat("\nDiscrepancy between CAI of reference vs. Efocal groups under PFI:\n")
+  print(round(x$`h CAI Ref-EF`[c(1, item_set + 1), 5:8, drop = FALSE], 3))
+  cat(paste0(dashes, "\nImpact of deleting an item on the discrepancy between
+             CAI of\nreference vs. Efocal groups under PFI:\n"))
+  print(round(x$`delta h CAI Ref-EF (deletion)`[c(item_set), 5:8,
+                                                drop = FALSE], 3))
+  invisible(NULL)
 }
 
+# register the custom print method for the itemdeletion class
+setMethod("print", "itemdeletion", print.itemdeletion)
 
+#' @method summary itemdeletion 
+#' @title Summary method for itemdeletion class
+#' @description prints a detailed summary for an itemdeletion object.
+#' @param object An object of class \code{itemdeletion}, the output from
+#'  \code{item_deletion_h()}.
+#' @param ... Additional arguments passed to methods.
+#' @return NULL
+#' 
+#' @examples
+#' # Multidimensional example
+#' lambda_matrix <- matrix(0, nrow = 5, ncol = 2)
+#' lambda_matrix[1:2, 1] <- c(.322, .655)
+#' lambda_matrix[3:5, 2] <- c(.398, .745, .543)
+#'
+#' multi_dim <- item_deletion_h(propsel = .05, n_dim = 5,
+#'                              weights_item = c(1/4, 1/4, 1/6, 1/6, 1/6),
+#'                              weights_latent = c(0.5, 0.5),
+#'                              alpha_r = c(0, 0),
+#'                              alpha_f = c(-0.3, 0.1),
+#'                              psi_r = matrix(c(1, 0.5, 0.5, 1), nrow = 2),
+#'                              lambda_r = lambda_matrix,
+#'                              nu_r = c(.225, .025, .010, .240, .125),
+#'                              nu_f = c(.225, -.05, .240, -.025, .125),
+#'                              Theta_r = diag(1, 5),
+#'                              Theta_f = diag(c(1, .95, .80, .75, 1)),
+#'                              plot_contour = TRUE)
+#' summary(multi_dim)
 #'@export
 summary.itemdeletion <- function(object, ...) {
   item_set <- object$return_items
@@ -217,3 +318,6 @@ summary.itemdeletion <- function(object, ...) {
   print(object$PartInv$strict)
   print(object$PartInv$partial)
 }
+# register the custom summary method for the itemdeletion class
+setMethod("summary", "itemdeletion", summary.itemdeletion)
+

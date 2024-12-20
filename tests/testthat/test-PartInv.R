@@ -28,9 +28,11 @@ test_that("PartInv() returns a data frame", {
 })
 
 test_that("plot.PartInv() works successfully", {
-  expect_error(plot(piout, labels = c("female", "male")),
-               regexp = NA)
+  # case where which_result=NULL, uses piout to determine which results are 
+  # available
+  expect_no_error(plot(piout, labels = c("female", "male")))
   expect_no_error(plot(piout))
+  # case where which_result="mi" but mi results were not previously requested
   expect_error(plot(piout, which_result = "mi"))
   piout_with_mi <- PartInv(
     propsel = .10,
@@ -43,9 +45,11 @@ test_that("plot.PartInv() works successfully", {
     labels = c("female", "male"),
     show_mi_result = TRUE
   )
-  expect_error(plot(piout_with_mi, labels = c("female", "male"),
-                    which_result = "mi"),
-               regexp = NA)
+  # case where which_result=mi, and mi results had been requested
+  expect_no_error(plot(piout_with_mi, labels = c("female", "male"),
+                    which_result = "mi"))
+  # case where which_result=NULL, and mi results had been requested
+  expect_no_error(plot(piout_with_mi, labels = c("female", "male")))
 })
 
 test_that("Identical selection with the same parameters", {

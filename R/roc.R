@@ -90,7 +90,7 @@ auc <- function(SE, SP) {
 #'
 #' # when cfa output is provided as input
 #' library(lavaan)
-#' #data("HolzingerSwineford1939", package = "lavaan")
+#' data("HolzingerSwineford1939", package = "lavaan")
 #' HS <- HolzingerSwineford1939
 #' HS$sex <- as.factor(HS$sex)
 #' HS.model <- ' visual  =~ x1 + x2 + x3
@@ -310,6 +310,8 @@ return_SE_SP <- function(cfa_fit,
 #'roc_auc_PartInv(PartInv_fit = PI_out, plot_mods = c("partial", "strict"))
 #'
 #'# when cfa output is provided as input
+#'library(lavaan)
+#'data("HolzingerSwineford1939", package = "lavaan")
 #'HS <- HolzingerSwineford1939
 #'HS$sex <- as.factor(HS$sex)
 #'HS.model <- ' visual  =~ x1 + x2 + x3

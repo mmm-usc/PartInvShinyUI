@@ -48,6 +48,7 @@ NULL
 #'     provided, groups are labeled automatically as 'Reference' (for the first
 #'     group) and 'Focal_1' through 'Focal_(g-1)', where `g` is the number of
 #'     groups.
+#' @param custom_colors Optional argument for specifying colors
 #' @param ... Other arguments passed to the \code{\link[graphics]{contour}}
 #'     function.
 #' @param alpha_r,alpha_f,nu_r,nu_f,Theta_r,Theta_f,psi_r,psi_f,lambda_r,lambda_f,phi_r,phi_f,tau_r,tau_f,kappa_r,kappa_f,pmix_ref
@@ -167,6 +168,7 @@ PartInv <- function(propsel = NULL, cut_z = NULL,
                     tau_r = NULL, tau_f = tau_r,
                     nu_r = NULL, nu_f = nu_r,
                     Theta_r = NULL, Theta_f = Theta_r,
+                    custom_colors = NULL,
                     ...) {
 
   functioncall <- match.call()
@@ -316,9 +318,11 @@ PartInv <- function(propsel = NULL, cut_z = NULL,
 
 
   if (plot_contour) {
-    plot.PartInv(out, labels = labels, which_result = "pi", ...)
+    plot.PartInv(out, labels = labels, which_result = "pi",
+                 custom_colors = custom_colors, ...)
     if (show_mi_result == TRUE) {
-      plot.PartInv(out, labels = labels, which_result = "mi", ...)
+      plot.PartInv(out, labels = labels, which_result = "mi", 
+                   custom_colors = custom_colors, ...)
     }
   }
   out[["labels"]] <- labels

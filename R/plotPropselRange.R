@@ -29,6 +29,8 @@ NULL
 #' @return Eight plots illustrating how proportion selected (PS), success ratio 
 #'     (SR), sensitivity (SE), and specificity (SP) change across different 
 #'     proportions of selection under partial and strict invariance conditions.
+#' @param custom_colors Optional argument for specifying colors.
+#' @param ... Additional arguments.
 #' @examples
 #' \dontrun{
 #' library(lavaan)
@@ -61,7 +63,8 @@ plotPropselRange <- function(cfa_fit,
                              to = 0.25,
                              by = 0.01,
                              cutoffs_from = NULL,
-                             cutoffs_to = NULL
+                             cutoffs_to = NULL, 
+                             custom_colors = NULL, ...
                              ) {
   
   stopifnot("cai_names can only take the following values: PS, SR, SE, SP, AI." =
@@ -192,13 +195,13 @@ plotPropselRange <- function(cfa_fit,
   mains <- mains[-1]
   ylabs <- ylabs[-1]
   
-  colorlist <-  c('#000000', '#f58231', '#e6194b', 'lightskyblue',
-                  '#ffe119', '#3cb44b', '#4363d8', '#f032e6',
+  colorlist <-  c('#000000', '#e6194b', 'lightskyblue', '#f58231',
                   '#bcf60c', '#fabebe', '#911eb4', '#46f0f0',
                   '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000',
                   '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080')
                    #https://sashamaps.net/docs/resources/20-colors/
-
+  if (!is.null(custom_colors)) { colorlist <- custom_colors }
+  
   legends <- c(rep("topright", 2), rep("bottomright", 6))
   
   if (!is.null(cai_names)) {
@@ -222,12 +225,12 @@ plotPropselRange <- function(cfa_fit,
     plot(rangeVals, AIs[1,], type = "l", ylim = c(0, 1.5),
          col = colorlist[1], lwd = 1.5, xlab = xl,
          ylab = "AI ratio",
-         main = paste0("AI ratios (reference group: ", labels[1], ")"),
+         main = paste0("AI ratios [reference group: ", labels[1], "]"),
          cex = 1.1)
     if (n_g > 2) {
-      for (i in seq_len(n_g - 1)) {
-        lines(rangeVals, AIs[i + 1,], type = "l",
-              lwd = 1.5, col = colorlist[i + 1])
+      for (i in seq(from = 2, to = n_g - 1)) {
+        lines(rangeVals, AIs[i,], type = "l",
+              lwd = 1.5, col = colorlist[i])
       }
     }
     legend("bottomright", legend = labels[-1], col = colorlist[1:n_g], lty = 1,

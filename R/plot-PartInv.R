@@ -58,16 +58,34 @@ contour_bvnorm <- function(mean1 = 0, sd1 = 1, mean2 = 0, sd2 = 1,
 #' @param ... Additional arguments.
 #'@export
 plot.PartInv <- function(x, labels = x[["labels"]],
-                         which_result = c("pi", "mi"),
+                         which_result = NULL,
                          custom_colors = NULL, ...) {
-    which_result <- match.arg(which_result)
-    if (which_result == "pi") {
+  
+  if (is.null(which_result)) {
+    available_res <- c()
+    if (!is.null(x$bivar_data)) available_res <- c(available_res, "pi")
+    if (!is.null(x$bivar_data_mi)) available_res <- c(available_res, "mi")
+    if (length(available_res) == 0) {
+      stop("No data available for plotting. Please ensure `x$bivar_data` or `x$bivar_data_mi` is not null.")
+    }
+    which_result <- available_res
+  }
+  
+  # Validate which_result
+  valid_results <- c("pi", "mi")
+  if (!all(which_result %in% valid_results)) {
+    stop("Invalid value for `which_result`. Choose from 'pi', 'mi', or both.")
+  }
+    
+    which_result <- match.arg(which_result, valid_results, several.ok = TRUE)
+    for (r in which_result){
+    if (r == "pi") {
         plot_dat <- x$bivar_data
         cut_xi <- x$cutpt_xi
         cut_z <- x$cutpt_z
         summ <- x$summary
         title <- c("Partial Measurement Invariance")
-    } else if (which_result == "mi") {
+    } else if (r == "mi") {
         summ <- x$summary_mi
         if (is.null(summ)) {
             stop("Strict invariance results not found. ",
@@ -126,4 +144,5 @@ plot.PartInv <- function(x, labels = x[["labels"]],
        warning("If you would like to plot the contours of more than 20 groups, 
                please provide a list of 20 color names.")
      }
+    }
 }
