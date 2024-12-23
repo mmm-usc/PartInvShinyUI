@@ -10,6 +10,7 @@ NULL
 #' (Lai & Zhang, 2022), which is an extension of Millsap & Kwok's (2004)
 #' approach.
 #'
+#' @param cfa_fit CFA model output from lavaan.
 #' @param propsel Proportion of selection. If missing, computed using `cut_z`.
 #' @param cut_z Pre-specified cutoff score on the observed composite. This
 #'     argument is ignored when `propsel` has input.
@@ -93,6 +94,16 @@ NULL
 #'          \item{labels}{List of labels.}
 #'          \item{functioncall}{Function call to PartInv.}   
 #' @examples
+#' # Two groups, using cfa fit object
+#' library(lavaan)
+#' HS <- HolzingerSwineford1939
+#' HS$sex <- as.factor(HS$sex)
+#' HS.model <- ' visual  =~ x1 + x2 + x3
+#'               textual =~ x4 + x5 + x6
+#'               speed   =~ x7 + x8 + x9 '
+#' 
+#' fit <- cfa(HS.model, data = HS, group = "sex")
+#' PartInv(fit, propsel = .7, plot_contour = TRUE, show_mi_result = TRUE)
 #' # Two groups, single dimension
 #' PartInv(propsel = .30,
 #'         weights_item = c(1, 1, 1, 1),
@@ -152,14 +163,15 @@ NULL
 #'         custom_colors = c("salmon1", "lightgreen", "skyblue1", "pink")
 #'         )
 #' @export
-PartInv <- function(propsel = NULL, cut_z = NULL,
+PartInv <- function(cfa_fit = NULL, propsel = NULL, cut_z = NULL,
                     weights_item = NULL,
                     weights_latent = NULL,
-                    alpha, psi, lambda, theta, nu,
-                    pmix = 0.5,
-                    pmix_ref = 0.5, plot_contour = FALSE,
+                    alpha = NULL, psi = NULL, lambda = NULL, theta = NULL, nu = NULL,
+                    pmix = NULL,
+                    pmix_ref = NULL, plot_contour = FALSE,
                     show_mi_result = FALSE,
                     labels = NULL,
+                    custom_colors = NULL,
                     kappa_r = NULL, kappa_f = kappa_r,
                     alpha_r = NULL, alpha_f = alpha_r,
                     phi_r = NULL, phi_f = phi_r,
@@ -168,56 +180,77 @@ PartInv <- function(propsel = NULL, cut_z = NULL,
                     tau_r = NULL, tau_f = tau_r,
                     nu_r = NULL, nu_f = nu_r,
                     Theta_r = NULL, Theta_f = Theta_r,
-                    custom_colors = NULL,
                     ...) {
 
   functioncall <- match.call()
-  # for backward compatibility with different input names
-  if (missing(nu) && !is.null(nu_r)) {
+  # for backward compatibility with different input names ####
+  if (is.null(cfa_fit) && (is.null(nu) && !is.null(nu_r))) {
     nu <- vector(2, mode = "list")
     nu[[1]] <- nu_r
     nu[[2]] <- nu_f
   }
-  if (missing(nu) && !is.null(tau_r)) {
+  if (is.null(cfa_fit) && (is.null(nu) && !is.null(tau_r))) {
     nu <- vector(2, mode = "list")
     nu[[1]] <- tau_r
     nu[[2]] <- tau_f
   }
-  if ((missing(alpha) || is.logical(alpha)) && !is.null(kappa_r)) {
+  if (is.null(cfa_fit) && 
+      ((is.null(alpha) || is.logical(alpha)) && !is.null(kappa_r))) {
     alpha <- vector(2, mode = "list")
     alpha[[1]] <- kappa_r
     alpha[[2]] <- kappa_f
   }
-  if ((missing(alpha) || is.logical(alpha)) && !is.null(alpha_r)) {
+  if (is.null(cfa_fit) && 
+      ((is.null(alpha) || is.logical(alpha)) && !is.null(alpha_r))) {
     alpha <- vector(2, mode = "list")
     alpha[[1]] <- as.numeric(alpha_r)
     alpha[[2]] <- as.numeric(alpha_f)
   }
   
-  if ((missing(psi) || is.logical(psi)) && !is.null(phi_r)) {
+  if (is.null(cfa_fit) && 
+      ((is.null(psi) || is.logical(psi)) && !is.null(phi_r))) {
     psi <- vector(2, mode = "list")
     psi[[1]] <- phi_r
     psi[[2]] <- phi_f
   }
-  if ((missing(psi) || is.logical(psi)) && !is.null(psi_r)) {
+  if (is.null(cfa_fit) && 
+      ((is.null(psi) || is.logical(psi)) && !is.null(psi_r))) {
     psi <- vector(2, mode = "list")
     psi[[1]] <- as.numeric(psi_r)
     psi[[2]] <- as.numeric(psi_f)
   }
 
-  if (missing(lambda) && !is.null(lambda_r)) {
+  if (is.null(lambda) && !is.null(lambda_r)) {
     lambda <- vector(2, mode = "list")
     lambda[[1]] <- lambda_r
     lambda[[2]] <- lambda_f
   }
-  if (missing(theta) && !is.null(Theta_r)) {
+  if (is.null(theta) && !is.null(Theta_r)) {
     theta <- vector(2, mode = "list")
     theta[[1]] <- Theta_r
     theta[[2]] <- Theta_f
   }
-  if (missing(pmix) && !is.null(pmix_ref)) {
+  if (is.null(pmix) && !is.null(pmix_ref)) {
     pmix <- c(pmix_ref, 1 - pmix_ref) # assuming two groups
   }
+  # end ####
+  
+  if (!is.null(cfa_fit)) {
+    
+    if (!any(unlist(lapply(list(nu, alpha, psi, lambda, theta), is.null)))) {
+      message("Both cfa_fit and parameter estimates were provided. Defaulting
+               to using cfa_fit.")
+    }
+    
+    lav_cfa <- unnest_list(lavInspect(cfa_fit, "est"))
+    # extract the parameter estimates from the cfa fit object
+    alpha <- lapply(lav_cfa$alpha, FUN = c)
+    nu <- lapply(lav_cfa$nu, FUN = c)
+    theta <- lav_cfa$theta
+    lambda <- lav_cfa$lambda
+    psi <- lav_cfa$psi
+  }
+  
   
   stopifnot("theta, nu, and lambda must be lists. Consider using `format_cfa_partinv()`." =
               (all(is.list(theta) & is.list(nu) & is.list(lambda))))
@@ -228,10 +261,6 @@ PartInv <- function(propsel = NULL, cut_z = NULL,
       (((lengths(alpha) == dim(psi)[1]) & (dim(psi)[1] == dim(psi)[2]) &
           lengths(alpha) == unlist(lapply(lambda, ncol))))
     )
-  stopifnot(
-    "Provide the correct number of mixing proportions." =
-      length(pmix) == length(alpha)
-    )
 
   num_g <- length(alpha)
   n <- length(nu[[1]])
@@ -240,6 +269,12 @@ PartInv <- function(propsel = NULL, cut_z = NULL,
   if (is.null(pmix)) pmix <- as.matrix(c(rep(1 / num_g, num_g)), ncol = num_g)
   pmix <- as.vector(pmix)
 
+  stopifnot(
+    "Provide the correct number of mixing proportions." =
+      length(pmix) == length(alpha)
+  )
+  
+  
   if (length(weights_latent) == 1) weights_latent <- rep(1, d)
   
   if(length(alpha) == 1 & length(psi) == 1) {
@@ -272,8 +307,15 @@ PartInv <- function(propsel = NULL, cut_z = NULL,
   psi <- lapply(psi, matrix, nrow = d, ncol = d)
 
   if (is.null(weights_item)) weights_item <- rep(1, n)
+  if (!is.null(weights_item) & length(weights_item) != n) {
+    stop("Please provide a weights_item vector of the correct length.")
+  }
+  
   if (is.null(weights_latent)) weights_latent <- rep(1, d)
-
+  if (!is.null(weights_latent) & length(weights_latent) != d) {
+    stop("Please provide a weights_latent vector of the correct length.")
+  }
+  
   out <- compute_cai(weights_item, weights_latent, alpha, psi, lambda, nu,
     theta, pmix, propsel, labels, cut_z,
     is_mi = FALSE

@@ -7,20 +7,22 @@
 Framework}
 \usage{
 PartInv(
+  cfa_fit = NULL,
   propsel = NULL,
   cut_z = NULL,
   weights_item = NULL,
   weights_latent = NULL,
-  alpha,
-  psi,
-  lambda,
-  theta,
-  nu,
-  pmix = 0.5,
-  pmix_ref = 0.5,
+  alpha = NULL,
+  psi = NULL,
+  lambda = NULL,
+  theta = NULL,
+  nu = NULL,
+  pmix = NULL,
+  pmix_ref = NULL,
   plot_contour = FALSE,
   show_mi_result = FALSE,
   labels = NULL,
+  custom_colors = NULL,
   kappa_r = NULL,
   kappa_f = kappa_r,
   alpha_r = NULL,
@@ -37,13 +39,14 @@ PartInv(
   nu_f = nu_r,
   Theta_r = NULL,
   Theta_f = Theta_r,
-  custom_colors = NULL,
   ...
 )
 
 PartInvMulti_we(...)
 }
 \arguments{
+\item{cfa_fit}{CFA model output from lavaan.}
+
 \item{propsel}{Proportion of selection. If missing, computed using \code{cut_z}.}
 
 \item{cut_z}{Pre-specified cutoff score on the observed composite. This
@@ -95,11 +98,11 @@ provided, groups are labeled automatically as 'Reference' (for the first
 group) and 'Focal_1' through 'Focal_(g-1)', where \code{g} is the number of
 groups.}
 
+\item{custom_colors}{Optional argument for specifying colors}
+
 \item{alpha_r, alpha_f, nu_r, nu_f, Theta_r, Theta_f, psi_r, psi_f, lambda_r, lambda_f, phi_r, phi_f, tau_r, tau_f, kappa_r, kappa_f, pmix_ref}{Deprecated; included only for backward compatibility. When comparing two
 groups, parameters with the '_r' suffix refer to the reference group while
 parameters with the '_f' suffix refer to the focal group.}
-
-\item{custom_colors}{Optional argument for specifying colors}
 
 \item{...}{Other arguments passed to the \code{\link[graphics]{contour}}
 function.}
@@ -150,6 +153,16 @@ using the multidimensional classification accuracy analysis
 approach.
 }
 \examples{
+# Two groups, using cfa fit object
+library(lavaan)
+HS <- HolzingerSwineford1939
+HS$sex <- as.factor(HS$sex)
+HS.model <- ' visual  =~ x1 + x2 + x3
+              textual =~ x4 + x5 + x6
+              speed   =~ x7 + x8 + x9 '
+
+fit <- cfa(HS.model, data = HS, group = "sex")
+PartInv(fit, propsel = .7, plot_contour = TRUE, show_mi_result = TRUE)
 # Two groups, single dimension
 PartInv(propsel = .30,
         weights_item = c(1, 1, 1, 1),
