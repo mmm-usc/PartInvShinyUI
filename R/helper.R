@@ -223,7 +223,9 @@ compute_cai <- function(weights_item, weights_latent, alpha, psi, lambda, nu,
                           lower.tail = FALSE)
   
   # computing summary statistics
-  CAIs <- matrix(ncol = ifelse(is_mi, num_g, num_g + num_g - 1) , nrow = 8) 
+  #CAIs <- matrix(ncol = ifelse(is_mi, num_g, num_g + num_g - 1) , nrow = 8) 
+  CAIs <- matrix(ncol = (num_g + num_g - 1), nrow = 8) 
+  
   for (i in seq_along(1:num_g)) {
     CAIs[, i] <- .partit_bvnorm(cut_xi, cut_z, lst$mn_xi[[i]], lst$sd_xi[[i]],
                                 lst$mn_z[[i]], lst$sd_z[[i]],
@@ -240,7 +242,7 @@ compute_cai <- function(weights_item, weights_latent, alpha, psi, lambda, nu,
                                   "Sensitivity", "Specificity"))
    nms <- labels #c("Reference", paste0("Focal_", 1:(num_g - 1)))
    
-  if (!is_mi) {
+ ### if (!is_mi) {
     # selection indices for the focal group if its distribution matches the
     # distribution of the reference group (Efocal)
     mn_z_Ef <- sd_z_Ef <- cov_z_xi_Ef <- vector(mode = "list")
@@ -260,7 +262,7 @@ compute_cai <- function(weights_item, weights_latent, alpha, psi, lambda, nu,
                                               cov12 = cov_z_xi_Ef[[i - 1]])
       nms <- c(labels, paste0("E_R(", labels[2:length(labels)], ")"))
     }
-  }
+###  }
    dat <- 
      data.frame(CAIs, row.names = c("A (true positive)", "B (false positive)",
                                     "C (true negative)", "D (false negative)",

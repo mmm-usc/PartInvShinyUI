@@ -1,5 +1,5 @@
 #' @title
-#' Impact of deleting biased item(s) on classification accuracy indices
+#' Impact of deleting biased item(s) on classification accuracy indices (CAI)
 #'
 #' @name
 #' item_deletion_h
@@ -12,29 +12,35 @@
 #'  expected CAI computed for the focal group; between CAI computed under strict
 #'  factorial invariance (SFI) vs. CAI computed under partial factorial
 #'  invariance (PFI); and between aggregate CAI computed for item subsets.
+#' @param cfa_fit CFA model output from lavaan.
 #' @param propsel Proportion of selection. If missing, computed using `cut_z`.
 #' @param cut_z Pre-specified cutoff score on the observed composite. This
 #'        argument is ignored when `propsel` has an input.
 #' @param weights_item A vector of item weights.
 #' @param weights_latent A  vector of latent factor weights.
-#' @param alpha_r A vector of latent factor mean for the reference group.
-#' @param alpha_f (optional) A vector of latent factor mean for the focal
-#'        group; if no input, set equal to `alpha_r`.
-#' @param psi_r A matrix of latent factor variance covariances for the reference
-#'        group.
-#' @param psi_f (optional) A matrix of latent factor variance-covariances for
-#'        the focal group; if no input, set equal to `psi_r`.
-#' @param lambda_r A matrix of factor loadings for the reference group.
-#' @param lambda_f (optional) A matrix of factor loadings for the focal group;
-#'        if no input, set equal to `lambda_r`.
-#' @param nu_r A matrix of measurement intercepts for the reference group
-#'        under the partial invariance condition.
-#' @param nu_f (optional) A matrix of measurement intercepts for the focal
-#'        group; if no input, set equal to `nu_r`.
-#' @param Theta_r A matrix of the unique factor variances and covariances
-#'        for the reference group.
-#' @param Theta_f (optional) A matrix of the unique factor variances and
-#'        covariances for the focal group; if no input, set equal to `Theta_r`.
+#' @param alpha A list of length `g` containing `1 x d` latent factor mean
+#'     vectors where `g` is the number of groups and `d` is the number of latent
+#'     dimensions. The first element is assumed to belong to the reference group.
+#' @param psi A list of length `g` containing `d x d` latent factor
+#'     variance-covariance matrices where `g` is the number of groups and `d` is
+#'     the number of latent dimensions. The first element is assumed to belong
+#'     to the reference group.
+#' @param lambda A list of length `g` containing `n x d` factor loading matrices
+#'     where `g` is the number of groups, `d` is the number of latent dimensions,
+#'     and `n` is the number of items in the scale. The first element is assumed
+#'     to belong to the reference group.
+#' @param nu A list of length `g` containing `1 x n` measurement intercept
+#'     vectors where `g` is the number of groups and `n` is the number of items
+#'     in the scale. The first element is assumed to belong to the reference
+#'     group.
+#' @param theta A list of length `g` containing `1 x n` vectors or `n x n`
+#'     matrices of unique factor variances and covariances, where `g` is the
+#'     number of groups and `n` is the number of items in the scale. The first
+#'     element is assumed to belong to the reference group.
+#' @param alpha_r,alpha_f,nu_r,nu_f,Theta_r,Theta_f,psi_r,psi_f,lambda_r,lambda_f,phi_r,phi_f,tau_r,tau_f,pmix_ref
+#'        Deprecated; included only for backward compatibility. When comparing two
+#'        groups, parameters with the '_r' suffix refer to the reference group while
+#'        parameters with the '_f' suffix refer to the focal group.
 #' @param pmix_ref Proportion of the reference group; default to 0.5 (i.e., two
 #'        populations have equal size).
 #' @param plot_contour Logical; whether the contour of the two populations
@@ -58,7 +64,7 @@
 #'        selected under SFI and PFI when the full item set is used is passed
 #'        onto calls to PartInv.
 #' @param labels A character vector with two elements to label the reference
-#'     and the focal group on the graph.
+#'         and the focal group on the graph.
 #' @param ... Other arguments passed to the \code{\link[graphics]{contour}}
 #'     function.
 #' @return An object of class `itemdeletion` containing 13 elements.
@@ -130,20 +136,13 @@
 #'                                Theta_r = diag(.96, 4),
 #'                                n_dim = 1, plot_contour = TRUE)
 #' @export
-item_deletion_h <- function(propsel = NULL,
+item_deletion_h <- function(cfa_fit = NULL,
+                            propsel = NULL,
                             cut_z = NULL,
-                            weights_item,
-                            weights_latent,
-                            alpha_r,
-                            alpha_f = alpha_r,
-                            psi_r,
-                            psi_f = psi_r,
-                            lambda_r,
-                            lambda_f = lambda_r,
-                            nu_r,
-                            nu_f = nu_r,
-                            Theta_r,
-                            Theta_f = Theta_r,
+                            weights_item = NULL,
+                            weights_latent = NULL,
+                            alpha = NULL, psi = NULL, lambda = NULL, theta = NULL, nu = NULL,
+                            pmix = NULL,
                             pmix_ref = 0.5,
                             plot_contour = TRUE,
                             show_mi_result = TRUE,
@@ -152,7 +151,83 @@ item_deletion_h <- function(propsel = NULL,
                             n_i_per_dim = NULL,
                             user_specified_items = NULL,
                             delete_one_cutoff = NULL,
+                            alpha_r = NULL, alpha_f = alpha_r,
+                            phi_r = NULL, phi_f = phi_r,
+                            psi_r = NULL, psi_f = psi_r,
+                            lambda_r = NULL, lambda_f = lambda_r,
+                            tau_r = NULL, tau_f = tau_r,
+                            nu_r = NULL, nu_f = nu_r,
+                            Theta_r = NULL, Theta_f = Theta_r,
                             ...) {
+  
+  # for backward compatibility with different input names ####
+  if (is.null(cfa_fit) && (is.null(nu) && !is.null(nu_r))) {
+    nu <- vector(2, mode = "list")
+    nu[[1]] <- nu_r; nu[[2]] <- nu_f
+  }
+  if (is.null(cfa_fit) && (is.null(nu) && !is.null(tau_r))) {
+    nu <- vector(2, mode = "list")
+    nu[[1]] <- tau_r; nu[[2]] <- tau_f
+  }
+  if (is.null(cfa_fit) && 
+      ((is.null(alpha) || is.logical(alpha)) && !is.null(alpha_r))) {
+    alpha <- vector(2, mode = "list")
+    alpha[[1]] <- as.numeric(alpha_r); alpha[[2]] <- as.numeric(alpha_f)
+  }
+  if (is.null(cfa_fit) && 
+      ((is.null(psi) || is.logical(psi)) && !is.null(phi_r))) {
+    psi <- vector(2, mode = "list")
+    psi[[1]] <- phi_r; psi[[2]] <- phi_f
+  }
+  if (is.null(cfa_fit) && 
+      ((is.null(psi) || is.logical(psi)) && !is.null(psi_r))) {
+    psi <- vector(2, mode = "list")
+    psi[[1]] <- as.numeric(psi_r); psi[[2]] <- as.numeric(psi_f)
+  }
+  if (is.null(lambda) && !is.null(lambda_r)) {
+    lambda <- vector(2, mode = "list")
+    lambda[[1]] <- lambda_r; lambda[[2]] <- lambda_f
+  }
+  if (is.null(theta) && !is.null(Theta_r)) {
+    theta <- vector(2, mode = "list")
+    theta[[1]] <- Theta_r; theta[[2]] <- Theta_f
+  }
+  if (is.null(pmix) && !is.null(pmix_ref)) {
+    pmix <- c(pmix_ref, 1 - pmix_ref) # assuming two groups
+  }
+  
+  if (!is.null(cfa_fit)) {
+    if (!any(unlist(lapply(list(nu, alpha, psi, lambda, theta), is.null)))) {
+      message("Both cfa_fit and parameter estimates were provided. Defaulting
+               to using cfa_fit.")
+    }
+    lav_cfa <- unnest_list(lavInspect(cfa_fit, "est"))
+    # extract the parameter estimates from the cfa fit object
+    alpha <- lapply(lav_cfa$alpha, FUN = c)
+    nu <- lapply(lav_cfa$nu, FUN = c)
+    theta <- lav_cfa$theta
+    lambda <- lav_cfa$lambda
+    psi <- lav_cfa$psi
+  }
+  #####
+  
+  num_g <- length(alpha)
+  n <- length(nu[[1]])
+  d <- length(alpha[[1]])
+  
+  if (length(weights_latent) == 1) weights_latent <- rep(1, d)
+  
+  if (is.null(weights_item)) weights_item <- rep(1, n)
+  if (!is.null(weights_item) & length(weights_item) != n) {
+    stop("Please provide a weights_item vector of the correct length.")
+  }
+  
+  if (is.null(weights_latent)) weights_latent <- rep(1, d)
+  if (!is.null(weights_latent) & length(weights_latent) != d) {
+    stop("Please provide a weights_latent vector of the correct length.")
+  }
+  
+  # setup ####
   N <- length(weights_item)
   pmix_f <- 1 - pmix_ref
   # Determine which set of items will be returned
@@ -182,51 +257,35 @@ item_deletion_h <- function(propsel = NULL,
   h_acai_p <-  delta_h_s_p_acai <- as.data.frame(matrix(nrow = 4, ncol = N))
   AI_ratios <- as.data.frame(matrix(nrow = 2, ncol = N + 1))
 
-  # Call PartInv with the full item set under strict invariance
-  store_str[[1]] <- 
-    PartInv(propsel = propsel, 
-            cut_z = cut_z, 
-            weights_item = weights_item, 
-            weights_latent = weights_latent,
-            alpha_r = alpha_r, 
-            alpha_f = alpha_f, 
-            psi_r = psi_r, 
-            psi_f = psi_f,
-            lambda_r = lambda_f * pmix_f + lambda_r * pmix_ref,
-            nu_r = nu_f * pmix_f + nu_r * pmix_ref,
-            Theta_r = Theta_f * pmix_f + Theta_r * pmix_ref,
-            pmix_ref = pmix_ref,
-            plot_contour = plot_contour, 
-            labels = c("Reference", "Focal"),
-            show_mi_result = show_mi_result)
-  class(store_str[[1]]) <- "PartInv"
-
-  # Call PartInv with the full item set under partial invariance
+  out_elements_par <- c("propsel", "cutpt_xi", "cutpt_z", "summary", 
+                            "bivar_data", "ai_ratio", "labels", "functioncall")
+  out_elements_str <- c(paste0(out_elements_par[1:6], "_mi"), out_elements_par[7:8])
+  
+  # Call PartInv with the full item set under partial and strict invariance ###
   store_par[[1]] <- 
-    PartInv(propsel = propsel, 
+    PartInv(cfa_fit = cfa_fit, 
+            propsel = propsel, 
             cut_z = cut_z, 
             weights_item = weights_item,
             weights_latent = weights_latent, 
-            alpha_r = alpha_r, 
-            alpha_f = alpha_f, 
-            psi_r = psi_r,
-            psi_f = psi_f, 
-            lambda_r = lambda_r, 
-            lambda_f = lambda_f,
-            nu_r = nu_r, 
-            nu_f = nu_f, 
-            Theta_r = Theta_r, 
-            Theta_f = Theta_f,
+            alpha = alpha,
+            psi = psi,
+            nu = nu,
+            theta = theta,
+            lambda = lambda,
             pmix_ref = pmix_ref, 
             plot_contour = plot_contour,
             labels = c("Reference", "Focal"), 
-            show_mi_result = show_mi_result)
+            show_mi_result = TRUE)
   class(store_par[[1]]) <- "PartInv"
 
+  store_str[[1]] <- store_par[[1]][out_elements_str]
+  class(store_str[[1]]) <- "PartInv"
+  
   partial <- store_par[[1]]$summary
-  strict  <- store_str[[1]]$summary
+  strict  <- store_str[[1]]$summary_mi
 
-  # Compare accuracy indices for reference and focal groups under strict vs.
+  # Compare CAI for reference and focal groups under strict vs.
   # partial invariance conditions and compute h for full item set
   acc <- acc_indices_h(store_str[[1]], store_par[[1]])
 
@@ -245,21 +304,22 @@ item_deletion_h <- function(propsel = NULL,
   # Compute h for the difference between strict and partial invariance for
   # aggregate SE, SR, SP
   h_acai_s_p[1] <- cohens_h(acai_s[1], acai_p[1])
-  AI_ratios[, 1] <- as.vector(c(store_str[[1]]$ai_ratio, 
+  AI_ratios[, 1] <- as.vector(c(store_str[[1]]$ai_ratio_mi, 
                                 store_par[[1]]$ai_ratio), mode = "double")
 
   # If the user supplied a new cutoff, set cut_z to that and set propsels to NULL.
   # If no cutoff was inputted, set propsel based on PartInv output with all items
   if(is.null(delete_one_cutoff)) {
     propsel_p <- store_par[[1]]$propsel
-    propsel_s <- store_str[[1]]$propsel
+    propsel_s <- store_str[[1]]$propsel_mi
     cut_z <- NULL
   } else {
     cut_z <- delete_one_cutoff
     propsel_p <- NULL
     propsel_s <- NULL
   }
-  # Item deletion scenarios
+  
+  # Item deletion scenarios ####
   for (i in seq_len(length(weights_item) + 1)[-1]) {
     # Assign a weight of 0 to the item to be deleted (indexed at i - 1), and
     # redistribute the weight from this item across the non-deleted items
@@ -267,57 +327,38 @@ item_deletion_h <- function(propsel = NULL,
                                          n_i_per_dim = n_i_per_dim,
                                          del_i = i - 1)
     
-    # Call PartInv with the new weights under strict invariance
-    store_str[[i]] <- 
-      PartInv(propsel = propsel_s, 
-              cut_z = cut_z, 
-              take_one_out = take_one_out, 
-              weights_latent = weights_latent, 
-              alpha_r = alpha_r,
-              alpha_f = alpha_f,
-              psi_r = psi_r, 
-              psi_f = psi_f,
-              lambda_r = lambda_f * pmix_f + lambda_r * pmix_ref,
-              nu_r = nu_f * pmix_f + nu_r * pmix_ref,
-              Theta_r = Theta_f * pmix_f + Theta_r * pmix_ref,
-              pmix_ref = pmix_ref,
-              plot_contour = plot_contour,
-              labels = c("Reference", "Focal"), 
-              show_mi_result = show_mi_result)
-    class(store_str[[i]]) <- "PartInv"
-    
-    # Call PartInv with the new weights under partial invariance
+    # Call PartInv with the new weights under partial invariance ####
     store_par[[i]] <- 
-      PartInv(propsel = propsel_p, 
+      PartInv(cfa_fit = cfa_fit, 
+              propsel = propsel_p, 
               cut_z = cut_z,
-              take_one_out = take_one_out, 
+              weights_item = take_one_out, 
               weights_latent = weights_latent,
-              alpha_r = alpha_r,
-              alpha_f = alpha_f,
-              psi_r = psi_r,
-              psi_f = psi_f,
-              lambda_r = lambda_r,
-              nu_r = nu_r,
-              nu_f = nu_f,
-              Theta_r = Theta_r,
-              Theta_f = Theta_f,
+              alpha = alpha,
+              psi = psi,
+              nu = nu,
+              theta = theta,
+              lambda = lambda,
               pmix_ref = pmix_ref, 
               plot_contour = plot_contour,
               labels = c("Reference", "Focal"),
-              show_mi_result = show_mi_result
+              show_mi_result = TRUE
               )
     class(store_par[[i]]) < "PartInv"
     
+    store_str[[i]] <- store_par[[i]][out_elements_str]
+    class(store_str[[i]]) <- "PartInv"
+    
     partial <- store_par[[i]]$summary
-    strict <- store_str[[i]]$summary
+    strict <- store_str[[i]]$summary_mi
 
     # Check whether improvements in ACAI may be misleading due pmix_ref
     err_improv_acai(i = i, store_summary_full = store_par[[1]]$summary,
                     store_summary_del1 = store_par[[i]]$summary)
-    err_improv_acai(i = i, store_summary_full = store_str[[1]]$summary,
-                    store_summary_del1 = store_str[[i]]$summary)
+    err_improv_acai(i = i, store_summary_full = store_str[[1]]$summary_mi,
+                    store_summary_del1 = store_str[[i]]$summary_mi)
     
-    # Compute h for the difference in accuracy indices for reference and focal
+    # Compute h for the difference in CAI for reference and focal
     # groups under strict vs. partial invariance conditions
     acc_del_i <- acc_indices_h(store_str[[i]], store_par[[i]])
     s_p_ref_list[[i]] <- acc_del_i$Reference
@@ -326,26 +367,25 @@ item_deletion_h <- function(propsel = NULL,
     h_s_p_ref[i] <- s_p_ref_list[[i]]$h
     h_s_p_foc[i] <- s_p_foc_list[[i]]$h
 
-    # Compute the change in Cohen's h comparing accuracy indices for the
+    # Compute the change in Cohen's h comparing CAI for the
     # reference and focal groups under strict vs. partial invariance when item i
     # is deleted i.e. the change in h_s_p_ref and h_s_p_foc
     delta_s_p_ref[i - 1] <- delta_h(h_s_p_ref[1], h_s_p_ref[i])
     delta_s_p_foc[i - 1] <- delta_h(h_s_p_foc[1], h_s_p_foc[i])
-    # Compute h for the difference in accuracy indices under partial invariance
-    # for the reference group vs. for the expected accuracy indices for the
+    # Compute h for the difference in CAI under partial invariance
+    # for the reference group vs. for the expected CAI for the
     # focal group if it followed the same distribution as the reference group
     # (`E_R(Focal)`)
     h_R_Ef[i] <- cohens_h(partial$Reference, partial$`E_R(Focal)`)
 
-    # Compute the change in Cohen's h comparing accuracy indices under partial
-    # invariance for the reference group vs. for the expected accuracy indices
+    # Compute the change in Cohen's h comparing CAI under partial
+    # invariance for the reference group vs. for the expected CAI
     # for the focal group if it followed the same distribution as the reference
     # group when item i is deleted, i.e. the change in h_R_Ef_del
     delta_h_R_Ef[i-1] <- delta_h(h_R_Ef[1], h_R_Ef[i])
 
     # Compute aggregate SR, SE, SP indices under partial invariance by weighting
-    # accuracy indices for the reference and focal groups by their group
-    # proportions
+    # CAI for the reference and focal groups by their group proportions
     acai_p[i] <- get_aggregate_CAI(pmix_ref, partial)
     # Repeat for strict invariance
     acai_s[i] <- get_aggregate_CAI(pmix_ref, strict)
@@ -358,11 +398,11 @@ item_deletion_h <- function(propsel = NULL,
 
     delta_h_s_p_acai[i - 1] <- delta_h(h_acai_s_p[1], h_acai_s_p[i])
 
-    AI_ratios[, i] <- as.vector(c(store_str[[i]]$ai_ratio, 
+    AI_ratios[, i] <- as.vector(c(store_str[[i]]$ai_ratio_mi, 
                                   store_par[[i]]$ai_ratio), mode = "double")
   }
   
-  # Format stored variablesa
+  # Format stored variables
     vars <- list("AI_ratios" = AI_ratios, "h_R_Ef" = h_R_Ef, 
                  "delta_s_p_ref" = delta_s_p_ref, "delta_s_p_foc" = delta_s_p_foc,
                  "store_str" = store_str, "store_par" = store_par,
@@ -388,7 +428,8 @@ item_deletion_h <- function(propsel = NULL,
     "delta h CAI Ref-EF (deletion)" = vlist$delta_h_R_Ef,
     "h CAI SFI-PFI" = list("ref"= vlist$h_s_p_ref, "foc" = vlist$h_s_p_foc),
     "delta h SFI-PFI (deletion)" = list("ref" = vlist$delta_s_p_ref,
-                                        "foc" = vlist$delta_s_p_foc),
+                                 
+                                               "foc" = vlist$delta_s_p_foc),
     "h SFI-PFI by groups" = list("reference" = vlist$h_s_p_list_ref, 
                                "focal" = vlist$h_s_p_list_foc),
     "PartInv" = list("strict" = vlist$store_str, "partial" = vlist$store_par),

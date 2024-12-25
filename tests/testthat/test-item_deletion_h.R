@@ -11,8 +11,8 @@ alpha_POS_f <- -0.125
 psi_POS_r <- 0.354^2
 psi_POS_f <- 0.329^2
 
-CESD_pos <- item_deletion_h(cut_z = 16/60*12, 
-                            weights_item = c(rep(1,4)), 
+CESD_pos <- item_deletion_h(cut_z = 16/60 * 12, 
+                            weights_item = c(rep(1, 4)), 
                             weights_latent = 1,
                             alpha_r = alpha_POS_r,
                             alpha_f = alpha_POS_f,
@@ -37,7 +37,7 @@ test_that("AI ratio is > 0 for all cells", {
 
 
 test_that("item_deletion_h() handles matrix input", {
-  CESD_pos_mat <- item_deletion_h(cut_z = 16/60*12, 
+  CESD_pos_mat <- item_deletion_h(cut_z = 16/60 * 12, 
                                   weights_item = c(rep(1,4)), 
                                   weights_latent = 1,
                                   alpha_r = matrix(alpha_POS_r),
@@ -174,7 +174,7 @@ ex_strict <- PartInv(propsel = propsel,
                        Theta_r * pmix_ref,
                      pmix_ref = pmix_ref, 
                      plot_contour = plot_contour, 
-                     labels = c("Reference", "Focal"))
+                     labels = c("Reference", "Focal"), show_mi_result = TRUE)
 ex_partial <- PartInv(propsel = propsel, 
                       cut_z = cut_z, 
                       weights_item = weights_item, 

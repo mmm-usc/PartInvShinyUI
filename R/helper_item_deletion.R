@@ -308,20 +308,21 @@ delta_h <- function(h_R, h_i_del) {
 #' @param partial_output Output from [PartInv()] under partial invariance.
 #' @return A 8 x 3 dataframe with columns `strict invariance`,
 #'        `partial invariance`, and `h`.
+#' @export
 acc_indices_h <- function(strict_output, partial_output) {
   r_names <- c("TP", "FP", "TN", "FN", "PS", "SR", "SE", "SP")
 
   ref_par_strict <- partial_output$summary[1][, 1]
-  ref_strict <- strict_output$summary[1][, 1]
+  ref_strict <- strict_output$summary_mi[1][, 1]
 
   df_ref <- data.frame(SFI =  ref_strict,
-                   PFI = ref_par_strict, row.names = r_names)
+                       PFI = ref_par_strict, row.names = r_names)
   df_ref["h"] <- cohens_h(df_ref$SFI, df_ref$PFI)
 
   f_par_strict <- partial_output$summary[2][, 1]
-  f_strict <- strict_output$summary[2][, 1]
-  df_f <- data.frame(SFI =  f_strict,
-                       PFI = f_par_strict, row.names = r_names)
+  f_strict <- strict_output$summary_mi[2][, 1]
+  df_f <- data.frame(SFI = f_strict,
+                     PFI = f_par_strict, row.names = r_names)
   df_f["h"] <- cohens_h(df_f$SFI, df_f$PFI)
   return(list("Reference" = df_ref, "Focal" = df_f))
 }
@@ -356,8 +357,8 @@ acc_indices_h <- function(strict_output, partial_output) {
 #'                        Theta_r = diag(1, 5),
 #'                        Theta_f = diag(c(1, .95, .80, .75, 1)))
 #' @export
-determine_biased_items <- function(lambda_r, lambda_f, nu_r, nu_f,
-                                   Theta_r, Theta_f) {
+determine_biased_items <- function(lambda_r , lambda_f, nu_r, nu_f, Theta_r, Theta_f,
+                                   ) {
   biased_items <- c()
   # Compare factor loadings
   lambda_mismatch <- !(lambda_r == lambda_f)

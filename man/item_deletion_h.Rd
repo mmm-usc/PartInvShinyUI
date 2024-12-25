@@ -5,20 +5,17 @@
 \title{Impact of deleting biased item(s) on classification accuracy indices}
 \usage{
 item_deletion_h(
+  cfa_fit = NULL,
   propsel = NULL,
   cut_z = NULL,
   weights_item,
   weights_latent,
-  alpha_r,
-  alpha_f = alpha_r,
-  psi_r,
-  psi_f = psi_r,
-  lambda_r,
-  lambda_f = lambda_r,
-  nu_r,
-  nu_f = nu_r,
-  Theta_r,
-  Theta_f = Theta_r,
+  alpha = NULL,
+  psi = NULL,
+  lambda = NULL,
+  theta = NULL,
+  nu = NULL,
+  pmix = NULL,
   pmix_ref = 0.5,
   plot_contour = TRUE,
   show_mi_result = TRUE,
@@ -27,10 +24,26 @@ item_deletion_h(
   n_i_per_dim = NULL,
   user_specified_items = NULL,
   delete_one_cutoff = NULL,
+  alpha_r = NULL,
+  alpha_f = alpha_r,
+  phi_r = NULL,
+  phi_f = phi_r,
+  psi_r = NULL,
+  psi_f = psi_r,
+  lambda_r = NULL,
+  lambda_f = lambda_r,
+  tau_r = NULL,
+  tau_f = tau_r,
+  nu_r = NULL,
+  nu_f = nu_r,
+  Theta_r = NULL,
+  Theta_f = Theta_r,
   ...
 )
 }
 \arguments{
+\item{cfa_fit}{CFA model output from lavaan.}
+
 \item{propsel}{Proportion of selection. If missing, computed using \code{cut_z}.}
 
 \item{cut_z}{Pre-specified cutoff score on the observed composite. This
@@ -40,33 +53,29 @@ argument is ignored when \code{propsel} has an input.}
 
 \item{weights_latent}{A  vector of latent factor weights.}
 
-\item{alpha_r}{A vector of latent factor mean for the reference group.}
+\item{alpha}{A list of length \code{g} containing \verb{1 x d} latent factor mean
+vectors where \code{g} is the number of groups and \code{d} is the number of latent
+dimensions. The first element is assumed to belong to the reference group.}
 
-\item{alpha_f}{(optional) A vector of latent factor mean for the focal
-group; if no input, set equal to \code{alpha_r}.}
+\item{psi}{A list of length \code{g} containing \verb{d x d} latent factor
+variance-covariance matrices where \code{g} is the number of groups and \code{d} is
+the number of latent dimensions. The first element is assumed to belong
+to the reference group.}
 
-\item{psi_r}{A matrix of latent factor variance covariances for the reference
+\item{lambda}{A list of length \code{g} containing \verb{n x d} factor loading matrices
+where \code{g} is the number of groups, \code{d} is the number of latent dimensions,
+and \code{n} is the number of items in the scale. The first element is assumed
+to belong to the reference group.}
+
+\item{theta}{A list of length \code{g} containing \verb{1 x n} vectors or \verb{n x n}
+matrices of unique factor variances and covariances, where \code{g} is the
+number of groups and \code{n} is the number of items in the scale. The first
+element is assumed to belong to the reference group.}
+
+\item{nu}{A list of length \code{g} containing \verb{1 x n} measurement intercept
+vectors where \code{g} is the number of groups and \code{n} is the number of items
+in the scale. The first element is assumed to belong to the reference
 group.}
-
-\item{psi_f}{(optional) A matrix of latent factor variance-covariances for
-the focal group; if no input, set equal to \code{psi_r}.}
-
-\item{lambda_r}{A matrix of factor loadings for the reference group.}
-
-\item{lambda_f}{(optional) A matrix of factor loadings for the focal group;
-if no input, set equal to \code{lambda_r}.}
-
-\item{nu_r}{A matrix of measurement intercepts for the reference group
-under the partial invariance condition.}
-
-\item{nu_f}{(optional) A matrix of measurement intercepts for the focal
-group; if no input, set equal to \code{nu_r}.}
-
-\item{Theta_r}{A matrix of the unique factor variances and covariances
-for the reference group.}
-
-\item{Theta_f}{(optional) A matrix of the unique factor variances and
-covariances for the focal group; if no input, set equal to \code{Theta_r}.}
 
 \item{pmix_ref}{Proportion of the reference group; default to 0.5 (i.e., two
 populations have equal size).}
@@ -99,6 +108,10 @@ be considered for deletion.}
 delete-one scenarios. \code{NULL} by default; if \code{NULL}, proportion
 selected under SFI and PFI when the full item set is used is passed
 onto calls to PartInv.}
+
+\item{alpha_r, alpha_f, nu_r, nu_f, Theta_r, Theta_f, psi_r, psi_f, lambda_r, lambda_f, phi_r, phi_f, tau_r, tau_f, kappa_r, kappa_f, pmix_ref}{Deprecated; included only for backward compatibility. When comparing two
+groups, parameters with the '_r' suffix refer to the reference group while
+parameters with the '_f' suffix refer to the focal group.}
 
 \item{...}{Other arguments passed to the \code{\link[graphics]{contour}}
 function.}

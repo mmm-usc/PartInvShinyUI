@@ -186,49 +186,39 @@ PartInv <- function(cfa_fit = NULL, propsel = NULL, cut_z = NULL,
   # for backward compatibility with different input names ####
   if (is.null(cfa_fit) && (is.null(nu) && !is.null(nu_r))) {
     nu <- vector(2, mode = "list")
-    nu[[1]] <- nu_r
-    nu[[2]] <- nu_f
+    nu[[1]] <- nu_r; nu[[2]] <- nu_f
   }
   if (is.null(cfa_fit) && (is.null(nu) && !is.null(tau_r))) {
     nu <- vector(2, mode = "list")
-    nu[[1]] <- tau_r
-    nu[[2]] <- tau_f
+    nu[[1]] <- tau_r; nu[[2]] <- tau_f
   }
   if (is.null(cfa_fit) && 
       ((is.null(alpha) || is.logical(alpha)) && !is.null(kappa_r))) {
     alpha <- vector(2, mode = "list")
-    alpha[[1]] <- kappa_r
-    alpha[[2]] <- kappa_f
+    alpha[[1]] <- kappa_r; alpha[[2]] <- kappa_f
   }
   if (is.null(cfa_fit) && 
       ((is.null(alpha) || is.logical(alpha)) && !is.null(alpha_r))) {
     alpha <- vector(2, mode = "list")
-    alpha[[1]] <- as.numeric(alpha_r)
-    alpha[[2]] <- as.numeric(alpha_f)
+    alpha[[1]] <- as.numeric(alpha_r); alpha[[2]] <- as.numeric(alpha_f)
   }
-  
   if (is.null(cfa_fit) && 
       ((is.null(psi) || is.logical(psi)) && !is.null(phi_r))) {
     psi <- vector(2, mode = "list")
-    psi[[1]] <- phi_r
-    psi[[2]] <- phi_f
+    psi[[1]] <- phi_r; psi[[2]] <- phi_f
   }
   if (is.null(cfa_fit) && 
       ((is.null(psi) || is.logical(psi)) && !is.null(psi_r))) {
     psi <- vector(2, mode = "list")
-    psi[[1]] <- as.numeric(psi_r)
-    psi[[2]] <- as.numeric(psi_f)
+    psi[[1]] <- as.numeric(psi_r); psi[[2]] <- as.numeric(psi_f)
   }
-
   if (is.null(lambda) && !is.null(lambda_r)) {
     lambda <- vector(2, mode = "list")
-    lambda[[1]] <- lambda_r
-    lambda[[2]] <- lambda_f
+    lambda[[1]] <- lambda_r; lambda[[2]] <- lambda_f
   }
   if (is.null(theta) && !is.null(Theta_r)) {
     theta <- vector(2, mode = "list")
-    theta[[1]] <- Theta_r
-    theta[[2]] <- Theta_f
+    theta[[1]] <- Theta_r; theta[[2]] <- Theta_f
   }
   if (is.null(pmix) && !is.null(pmix_ref)) {
     pmix <- c(pmix_ref, 1 - pmix_ref) # assuming two groups
@@ -236,12 +226,10 @@ PartInv <- function(cfa_fit = NULL, propsel = NULL, cut_z = NULL,
   # end ####
   
   if (!is.null(cfa_fit)) {
-    
     if (!any(unlist(lapply(list(nu, alpha, psi, lambda, theta), is.null)))) {
       message("Both cfa_fit and parameter estimates were provided. Defaulting
                to using cfa_fit.")
     }
-    
     lav_cfa <- unnest_list(lavInspect(cfa_fit, "est"))
     # extract the parameter estimates from the cfa fit object
     alpha <- lapply(lav_cfa$alpha, FUN = c)
@@ -271,9 +259,7 @@ PartInv <- function(cfa_fit = NULL, propsel = NULL, cut_z = NULL,
 
   stopifnot(
     "Provide the correct number of mixing proportions." =
-      length(pmix) == length(alpha)
-  )
-  
+      length(pmix) == length(alpha))
   
   if (length(weights_latent) == 1) weights_latent <- rep(1, d)
   
@@ -325,10 +311,6 @@ PartInv <- function(cfa_fit = NULL, propsel = NULL, cut_z = NULL,
 
   ai_ratio <- as.data.frame(out$summary[5, (num_g + 1):(num_g + num_g - 1)] /
     out$summary[5, 1])
-
-#    message("Note: The first group is being used as the reference group. 
-#Rearrange the inputs to designate a different group as the reference.\n\n")
-  
   names(ai_ratio) <- labels[-1]
   row.names(ai_ratio) <- c("")
   out[["ai_ratio"]] <- ai_ratio
@@ -355,9 +337,18 @@ PartInv <- function(cfa_fit = NULL, propsel = NULL, cut_z = NULL,
     )
     colnames(out_mi$summary) <- labels
     names(out_mi) <- paste0(names(out_mi), "_mi")
+    
+    # calculate AI ratio for strict invariance (should be 1)   
+    ai_ratio_mi <- as.data.frame(out_mi$summary[5, (num_g + 1):(num_g + num_g - 1)] /
+                                   out_mi$summary[5, 1])
+    names(ai_ratio_mi) <- labels[-1]
+    row.names(ai_ratio_mi) <- c("")
+    
+    # remove the E_R(Focal) columns from summary_mi
+    out_mi$summary_mi <- out_mi$summary_mi[, 1:num_g]
     out <- c(out, out_mi)
+    out[["ai_ratio_mi"]] <- ai_ratio_mi
   }
-
 
   if (plot_contour) {
     plot.PartInv(out, labels = labels, which_result = "pi",
