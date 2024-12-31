@@ -4,37 +4,43 @@
 \alias{determine_biased_items}
 \title{Determine biased items}
 \usage{
-determine_biased_items(lambda_r, lambda_f, nu_r, nu_f, Theta_r, Theta_f)
+determine_biased_items(
+  lambda,
+  nu,
+  theta,
+  lambda_r = NULL,
+  lambda_f = lambda_r,
+  nu_r = NULL,
+  nu_f = nu_r,
+  Theta_r = NULL,
+  Theta_f = Theta_r
+)
 }
 \arguments{
-\item{lambda_r}{Factor loadings for the reference group.}
+\item{lambda}{Factor loadings.}
 
-\item{lambda_f}{Factor loadings for the focal group.}
+\item{nu}{Measurement intercepts.}
 
-\item{nu_r}{Measurement intercepts for the reference group.}
+\item{theta}{Uniqueness.}
 
-\item{nu_f}{Measurement intercepts for the focal group.}
-
-\item{Theta_r}{Uniqueness for the reference group.}
-
-\item{Theta_f}{Uniqueness for the focal group.}
+\item{nu_r, nu_f, Theta_r, Theta_f, lambda_r, lambda_f}{Deprecated; included only
+for backward compatibility.}
 }
 \value{
 A vector containing the indices of the biased items.
 }
 \description{
 \code{determine_biased_items} takes in the factor loadings, intercepts, and
-uniqueness for the reference and focal groups, and returns indices of
-noninvariant items.
+uniqueness, and returns indices of noninvariant items.
 }
 \examples{
 lambda_matrix <- matrix(0, nrow = 5, ncol = 2)
 lambda_matrix[1:2, 1] <- c(.322, .655)
 lambda_matrix[3:5, 2] <- c(.398, .745, .543)
-determine_biased_items(lambda_r = lambda_matrix,
-                       lambda_f = lambda_matrix,
-                       nu_r = c(.225, .025, .010, .240, .125),
-                       nu_f = c(.225, -.05, .240, -.025, .125),
-                       Theta_r = diag(1, 5),
-                       Theta_f = diag(c(1, .95, .80, .75, 1)))
+lambda_matrix2 <- lambda_matrix
+lambda_matrix2[3,1] <- 3
+determine_biased_items(lambda = list(lambda_matrix, lambda_matrix2),
+                       nu = list(c(.225, .025, .010, .240, .125),
+                                 c(.225, -.05, .240, -.025, .125)),
+                       theta = list(diag(1, 5), diag(c(1, .95, .80, .75, 1))))
 }

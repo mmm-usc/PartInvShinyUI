@@ -4,13 +4,15 @@
 \alias{get_aggregate_CAI}
 \title{Compute PS, SR, SE, SP weighted by group proportions}
 \usage{
-get_aggregate_CAI(pmixr, store_summary)
+get_aggregate_CAI(pmix, store_summary, inv_cond)
 }
 \arguments{
-\item{pmixr}{Proportion of the reference group.}
+\item{pmix}{Proportion of the reference group.}
 
 \item{store_summary}{The summary table from \code{\link[=PartInv]{PartInv()}}
 under partial or strict invariance.}
+
+\item{inv_cond}{Strict vs. partial.}
 }
 \value{
 A vector of length 4.

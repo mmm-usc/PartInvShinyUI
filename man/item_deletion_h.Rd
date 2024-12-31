@@ -2,14 +2,14 @@
 % Please edit documentation in R/item_deletion_h.R
 \name{item_deletion_h}
 \alias{item_deletion_h}
-\title{Impact of deleting biased item(s) on classification accuracy indices}
+\title{Impact of deleting biased item(s) on classification accuracy indices (CAI)}
 \usage{
 item_deletion_h(
   cfa_fit = NULL,
   propsel = NULL,
   cut_z = NULL,
-  weights_item,
-  weights_latent,
+  weights_item = NULL,
+  weights_latent = NULL,
   alpha = NULL,
   psi = NULL,
   lambda = NULL,
@@ -77,8 +77,9 @@ vectors where \code{g} is the number of groups and \code{n} is the number of ite
 in the scale. The first element is assumed to belong to the reference
 group.}
 
-\item{pmix_ref}{Proportion of the reference group; default to 0.5 (i.e., two
-populations have equal size).}
+\item{pmix}{List of length \code{g} containing the mixing proportions of each
+group. If \code{NULL}, defaults to \code{1/g} for each group (i.e., the populations
+have equal size).}
 
 \item{plot_contour}{Logical; whether the contour of the two populations
 should be plotted; default to \code{TRUE}.}
@@ -109,7 +110,7 @@ delete-one scenarios. \code{NULL} by default; if \code{NULL}, proportion
 selected under SFI and PFI when the full item set is used is passed
 onto calls to PartInv.}
 
-\item{alpha_r, alpha_f, nu_r, nu_f, Theta_r, Theta_f, psi_r, psi_f, lambda_r, lambda_f, phi_r, phi_f, tau_r, tau_f, kappa_r, kappa_f, pmix_ref}{Deprecated; included only for backward compatibility. When comparing two
+\item{alpha_r, alpha_f, nu_r, nu_f, Theta_r, Theta_f, psi_r, psi_f, lambda_r, lambda_f, phi_r, phi_f, tau_r, tau_f, pmix_ref}{Deprecated; included only for backward compatibility. When comparing two
 groups, parameters with the '_r' suffix refer to the reference group while
 parameters with the '_f' suffix refer to the focal group.}
 

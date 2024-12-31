@@ -67,9 +67,10 @@ format_item_del <- function(N, l) {
 #' strict invariance by weighting the TP, TF, TN, FP values for the reference
 #' and focal groups with the group proportions.
 #'
-#' @param pmixr Proportion of the reference group.
+#' @param pmix Proportion of the reference group.
 #' @param store_summary The summary table from [PartInv()]
 #' under partial or strict invariance.
+#' @param inv_cond Strict vs. partial.
 #'
 #' @return A vector of length 4.
 #'          \item{PS}{Proportion selected, computed as \eqn{TP + FP}.}
@@ -77,22 +78,35 @@ format_item_del <- function(N, l) {
 #'          \item{SE}{Sensitivity, computed as \eqn{TP/(TP + FN)}.}
 #'          \item{SP}{Specificity, computed as \eqn{TN/(TN + FP)}.}
 
-get_aggregate_CAI <- function(pmixr, store_summary) {
-  r <- store_summary$Reference
-  f <- store_summary$Focal
-  pmixf <- 1 - pmixr
+get_aggregate_CAI <- function(pmix, store_summary, inv_cond) {
+  # Ensure pmix sums to 1
+  if (abs(sum(pmix) - 1) > 1e-6) {
+    stop("The sum of pmix must be equal to 1.")
+  }
   
-  TP <- pmixr * r[1] + pmixf * f[1]
-  FP <- pmixr * r[2] + pmixf * f[2]
-  TN <- pmixr * r[3] + pmixf * f[3]
-  FN <- pmixr * r[4] + pmixf * f[4]
+  # Check for consistency between pmix and store_summary
+  if ((inv_cond == "partial") && ((2 * length(pmix) - 1) != ncol(store_summary))) {
+    stop("Length of pmix must match the number of groups in store_summary.")
+  }  
+  if ((inv_cond == "strict") && (length(pmix) != ncol(store_summary))) {
+    stop("Length of pmix must match the number of groups in store_summary.")
+  }
   
+  # Compute weighted aggregates for TP, FP, TN, FN
+  TP <- sum(pmix * store_summary$TP)
+  FP <- sum(pmix * store_summary$FP)
+  TN <- sum(pmix * store_summary$TN)
+  FN <- sum(pmix * store_summary$FN)
+  
+  # Compute metrics
   PS <- TP + FP
   SR <- TP / (TP + FP)
   SE <- TP / (TP + FN)
   SP <- TN / (TN + FP)
-  return(c(PS, SR, SE, SP))
+  
+  return(c(PS = PS, SR = SR, SE = SE, SP = SP))
 }
+
 
 #' @title
 #' Check for misleading improvements in aggregate CAI
@@ -327,7 +341,6 @@ acc_indices_h <- function(strict_output, partial_output) {
   return(list("Reference" = df_ref, "Focal" = df_f))
 }
 
-
 #' @title
 #' Determine biased items
 #'
@@ -336,48 +349,114 @@ acc_indices_h <- function(strict_output, partial_output) {
 #'
 #' @description
 #' \code{determine_biased_items} takes in the factor loadings, intercepts, and
-#'  uniqueness for the reference and focal groups, and returns indices of
-#'  noninvariant items.
-#'
-#' @param lambda_r Factor loadings for the reference group.
-#' @param lambda_f Factor loadings for the focal group.
-#' @param nu_r Measurement intercepts for the reference group.
-#' @param nu_f Measurement intercepts for the focal group.
-#' @param Theta_r Uniqueness for the reference group.
-#' @param Theta_f Uniqueness for the focal group.
+#'  uniqueness, and returns indices of noninvariant items.
+#' @param nu_r,nu_f,Theta_r,Theta_f,lambda_r,lambda_f Deprecated; included only 
+#' for backward compatibility.
+#' @param lambda Factor loadings.
+#' @param nu Measurement intercepts.
+#' @param theta Uniqueness.
 #' @return A vector containing the indices of the biased items.
 #' @examples
 #' lambda_matrix <- matrix(0, nrow = 5, ncol = 2)
 #' lambda_matrix[1:2, 1] <- c(.322, .655)
 #' lambda_matrix[3:5, 2] <- c(.398, .745, .543)
-#' determine_biased_items(lambda_r = lambda_matrix,
-#'                        lambda_f = lambda_matrix,
-#'                        nu_r = c(.225, .025, .010, .240, .125),
-#'                        nu_f = c(.225, -.05, .240, -.025, .125),
-#'                        Theta_r = diag(1, 5),
-#'                        Theta_f = diag(c(1, .95, .80, .75, 1)))
+#' lambda_matrix2 <- lambda_matrix
+#' lambda_matrix2[3,1] <- 3
+#' determine_biased_items(lambda = list(lambda_matrix, lambda_matrix2),
+#'                        nu = list(c(.225, .025, .010, .240, .125),
+#'                                  c(.225, -.05, .240, -.025, .125)),
+#'                        theta = list(diag(1, 5), diag(c(1, .95, .80, .75, 1))))
 #' @export
-determine_biased_items <- function(lambda_r , lambda_f, nu_r, nu_f, Theta_r, Theta_f,
-                                   ) {
+determine_biased_items <- function(lambda, nu, theta, 
+                                   lambda_r = NULL, lambda_f = lambda_r,
+                                   nu_r = NULL, nu_f = nu_r,
+                                   Theta_r = NULL, Theta_f = Theta_r) {
   biased_items <- c()
-  # Compare factor loadings
-  lambda_mismatch <- !(lambda_r == lambda_f)
-  if (any(lambda_mismatch, TRUE)) {
-    biased_items <- c(biased_items, which(lambda_mismatch))
-    }
-  # Compare uniqueness
-  theta_mismatch <- !apply(Theta_r == Theta_f, 1, all)
-  if (any(theta_mismatch, TRUE)) {
-    biased_items <- c(biased_items, which(theta_mismatch)) 
-    }
-  # Compare intercepts
-  nu_mismatch <- !(nu_r == nu_f)
-  if (any(nu_mismatch, TRUE)) {
-    biased_items <- c(biased_items, which(nu_mismatch)) }
-
+  
+  # backward compatibility
+  if (missing(nu) && !is.null(nu_r)) {
+    nu <- vector(2, mode = "list")
+    nu[[1]] <- nu_r; nu[[2]] <- nu_f
+  }
+  if (missing(lambda) && !is.null(lambda_r)) {
+    lambda <- vector(2, mode = "list")
+    lambda[[1]] <- lambda_r; lambda[[2]] <- lambda_f
+  }
+  if (missing(theta) && !is.null(Theta_r)) {
+    theta <- vector(2, mode = "list")
+    theta[[1]] <- Theta_r; theta[[2]] <- Theta_f
+  }
+  
+  # compare factor loadings (lambda)
+  lambda_mismatch <- find_mismatched_indices(lambda)
+  if (!is.null(lambda_mismatch)) {
+    biased_items <- c(biased_items, unique(lambda_mismatch[, 1]))  # row indices
+  }
+  # compare uniqueness (theta)
+  theta_mismatch <- find_mismatched_indices(theta)
+  if (!is.null(theta_mismatch)) {
+    biased_items <- c(biased_items, unique(theta_mismatch[, 1]))  # row indices
+  }
+  # compare intercepts (nu)
+  nu_mismatch <- find_mismatched_indices(nu)
+  if (!is.null(nu_mismatch)) {
+    biased_items <- c(biased_items, unique(nu_mismatch))  # Vector indices
+  }
+  
   biased <- unique(biased_items)
   if (length(biased) == 0) {
-    print("Strict invariance holds for all items.") 
-    }
-  return(sort(biased))
+    message("Strict invariance holds for all items.")
+    return(NULL)
   }
+  return(sort(biased))
+}
+
+
+
+
+find_mismatched_indices <- function(lst) {
+  if (any(sapply(lst, length) == 0)) stop("The list contains empty elements.")
+  # check for non-numeric elements
+  if (!all(sapply(lst, function(x) is.numeric(x) || is.matrix(x)))) {
+    stop("All elements must be numeric.")
+  }
+  if (all(sapply(lst, is.vector))) {
+    if (!all(sapply(lst, length) == length(lst[[1]]))) {
+      stop("Vectors have unequal lengths.")
+    }
+    
+    # combine vectors into a matrix
+    combined_matrix <- do.call(rbind, lst)
+    # check for mismatches across rows for each column (vector element index)
+    mismatches <- apply(combined_matrix, 2, function(x) length(unique(x)) > 1)
+
+    if (!any(mismatches)) return(NULL)
+    
+    return(which(mismatches))
+  } else {
+    # handle lists of matrices or mixed inputs
+    lst <- lapply(lst, function(x) if (is.vector(x)) matrix(x, nrow = 1) else x)
+    
+    # ensure all elements have identical dimensions
+    dims <- sapply(lst, dim)
+    if (!all(apply(dims, 1, function(x) length(unique(x)) == 1))) {
+      stop("All elements must have the same dimensions.")
+    }
+    
+    # convert list elements into arrays for element-wise comparison
+    combined_array <- array(unlist(lst), dim = c(dim(lst[[1]]), length(lst)))
+    
+    # check for mismatches across the third dimension
+    mismatches <- apply(combined_array, c(1, 2), function(x) length(unique(x)) > 1)
+    
+    if (!any(mismatches)) {
+      return(NULL)
+    }
+    # extract row and column indices of mismatches
+    return(which(mismatches, arr.ind = TRUE))
+  }
+}
+
+
+
+

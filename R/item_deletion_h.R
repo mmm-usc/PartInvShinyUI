@@ -41,8 +41,9 @@
 #'        Deprecated; included only for backward compatibility. When comparing two
 #'        groups, parameters with the '_r' suffix refer to the reference group while
 #'        parameters with the '_f' suffix refer to the focal group.
-#' @param pmix_ref Proportion of the reference group; default to 0.5 (i.e., two
-#'        populations have equal size).
+#' @param pmix List of length `g` containing the mixing proportions of each
+#'     group. If `NULL`, defaults to `1/g` for each group (i.e., the populations
+#'     have equal size).
 #' @param plot_contour Logical; whether the contour of the two populations
 #'        should be plotted; default to `TRUE`.
 #' @param show_mi_result If \code{TRUE}, perform classification accuracy analysis
@@ -229,12 +230,11 @@ item_deletion_h <- function(cfa_fit = NULL,
   
   # setup ####
   N <- length(weights_item)
-  pmix_f <- 1 - pmix_ref
+  
   # Determine which set of items will be returned
   return_items <- c()
   if(is.null(user_specified_items)) { # default: return only the biased items.
-      return_items <- determine_biased_items(lambda_r, lambda_f, nu_r, nu_f,
-                                             Theta_r, Theta_f)
+      return_items <- determine_biased_items(lambda, nu, theta)
       return_items <-  setdiff(return_items, which(weights_item == 0))
   } else {
     if (!all(user_specified_items == floor(user_specified_items))) {
@@ -273,7 +273,7 @@ item_deletion_h <- function(cfa_fit = NULL,
             nu = nu,
             theta = theta,
             lambda = lambda,
-            pmix_ref = pmix_ref, 
+            pmix = pmix, 
             plot_contour = plot_contour,
             labels = c("Reference", "Focal"), 
             show_mi_result = TRUE)
@@ -297,9 +297,9 @@ item_deletion_h <- function(cfa_fit = NULL,
 
   # Re-weight SE, SR, SP by focal and group proportions to compute
   # aggregate indices under partial invariance for the full item set
-  acai_p[1] <- get_aggregate_CAI(pmix_ref, partial)
+  acai_p[1] <- get_aggregate_CAI(pmix, partial, inv_cond = "partial")
   # Repeat for strict invariance
-  acai_s[1] <-  get_aggregate_CAI(pmix_ref, strict)
+  acai_s[1] <-  get_aggregate_CAI(pmix, strict, inv_cond = "strict")
 
   # Compute h for the difference between strict and partial invariance for
   # aggregate SE, SR, SP
@@ -339,7 +339,7 @@ item_deletion_h <- function(cfa_fit = NULL,
               nu = nu,
               theta = theta,
               lambda = lambda,
-              pmix_ref = pmix_ref, 
+              pmix = pmix, 
               plot_contour = plot_contour,
               labels = c("Reference", "Focal"),
               show_mi_result = TRUE
@@ -352,7 +352,7 @@ item_deletion_h <- function(cfa_fit = NULL,
     partial <- store_par[[i]]$summary
     strict <- store_str[[i]]$summary_mi
 
-    # Check whether improvements in ACAI may be misleading due pmix_ref
+    # Check whether improvements in ACAI may be misleading due pmix
     err_improv_acai(i = i, store_summary_full = store_par[[1]]$summary,
                     store_summary_del1 = store_par[[i]]$summary)
     err_improv_acai(i = i, store_summary_full = store_str[[1]]$summary_mi,
@@ -386,9 +386,9 @@ item_deletion_h <- function(cfa_fit = NULL,
 
     # Compute aggregate SR, SE, SP indices under partial invariance by weighting
     # CAI for the reference and focal groups by their group proportions
-    acai_p[i] <- get_aggregate_CAI(pmix_ref, partial)
+    acai_p[i] <- get_aggregate_CAI(pmix, partial, inv_cond = "partial")
     # Repeat for strict invariance
-    acai_s[i] <- get_aggregate_CAI(pmix_ref, strict)
+    acai_s[i] <- get_aggregate_CAI(pmix, strict, inv_cond = "strict")
     # Compute Cohen's h for the difference between aggregate SE, SR, SP under
     # strict vs. partial invariance
     h_acai_s_p[i] <- cohens_h(acai_s[i], acai_p[i])
