@@ -77,7 +77,7 @@ format_item_del <- function(N, l) {
 #'          \item{SR}{Success ratio, computed as \eqn{TP/(TP + FP)}.}
 #'          \item{SE}{Sensitivity, computed as \eqn{TP/(TP + FN)}.}
 #'          \item{SP}{Specificity, computed as \eqn{TN/(TN + FP)}.}
-
+#' @export
 get_aggregate_CAI <- function(pmix, store_summary, inv_cond) {
   # Ensure pmix sums to 1
   if (abs(sum(pmix) - 1) > 1e-6) {
@@ -93,10 +93,10 @@ get_aggregate_CAI <- function(pmix, store_summary, inv_cond) {
   }
   
   # Compute weighted aggregates for TP, FP, TN, FN
-  TP <- sum(pmix * store_summary$TP)
-  FP <- sum(pmix * store_summary$FP)
-  TN <- sum(pmix * store_summary$TN)
-  FN <- sum(pmix * store_summary$FN)
+  TP <- sum(pmix * store_summary[1,])
+  FP <- sum(pmix * store_summary[2,])
+  TN <- sum(pmix * store_summary[3,])
+  FN <- sum(pmix * store_summary[4,])
   
   # Compute metrics
   PS <- TP + FP
@@ -119,48 +119,43 @@ get_aggregate_CAI <- function(pmix, store_summary, inv_cond) {
 #' may have resulted from the higher mixing proportion of the reference group
 #' masking worsening performance for the focal group. If the effect size of any
 #' change indicating worse performance for the focal group and better
-#' performance for the reference group is larger than 0.1, prints a warning
-#' message.
+#' performance for the reference group is larger than 0.1, prints a warning.
 #' @param i Index of item under consideration.
-#' @param store_summary_full PartInv summary for the case where all items are
-#' retained.
-#' @param store_summary_del1 PartInv summary for the case where item i is
-#' excluded.
-err_improv_acai <- function(i, store_summary_full, store_summary_del1) {
-  # Store relevant values.
-  r <- store_summary_full$Reference
-  f <- store_summary_full$Focal
-  r_del1 <- store_summary_del1$Reference
-  f_del1 <- store_summary_del1$Focal
-
-  # Compute Cohen's h for the difference between full and drop one indices.
-  h_r <- cohens_h(r, r_del1)
-  h_f <- cohens_h(f, f_del1)
-  # Check for changes (boolean).
-  r_bool <- r < r_del1 
-  f_bool_leq <- f <= f_del1
-  f_bool_geq <- f >= f_del1
-  # Check the difference for the reference or focal group has Cohen's h > 0.1.
-  h_rf.1 <- (h_r > 0.1 | h_f > 0.1)
+#' @param s_full PartInv summary for the case where all items are retained.
+#' @param s_del1 PartInv summary for the case where item i is excluded.
+#' @param n_g Number of groups
+err_improv_acai <- function(i, s_full, s_del1, n_g) {
+  # store the focal groups' values in a list
+  focals <- list(s_full[,2:n_g], s_del1[,2:n_g])
+  
+  # compute Cohen's h for the difference between full and drop one indices for 
+  # the reference group
+  h_r <- cohens_h(s_full[,1], s_del1[,1]) #cohens_h(r, r_del1)
+  # compute Cohen's h for the difference between full and drop one indices for 
+  # the focal groups
+  h_f <- lapply(focals, FUN = function(x) cohens_h(x[[1]], x[[2]])) #h_f <- cohens_h(f_full, f_del1)
+  # Check for changes (boolean)
+  r_bool <- s_full[,1] < s_del1[,1] 
+  f_bool_leq1 <- s_full[,2:n_g] <= s_del1[2:n_g]
+  f_bool_leq <- apply(f_bool_leq1, MARGIN = 1, FUN = all)
+  f_bool_geq1 <- s_full[,2:n_g] >= s_del1[2:n_g]
+  f_bool_geq <- apply(f_bool_leq1, MARGIN = 1, FUN = all)
+  
+  # wrangle into a matrix to apply operations by row
+  h_f_mat <- matrix(unlist(h_f), nrow = 8, ncol = (n_g - 1))
+  # check the difference for the reference or focal groups has Cohen's h > 0.1
+  h_rf.1 <- (h_r > 0.1 | apply((h_f_mat > 0.1), MARGIN = 1, FUN = all))
 
   vals <- c("TP", "FP", "TN", "FN")
 
   # TP_f decreases/remains unchanged & TP_r increases
-  if(r_bool[1] && f_bool_geq[1] && h_rf.1[1]) {
-    cat1(1, vals, 1)
-    }
+  if(r_bool[1] && f_bool_geq[1] && h_rf.1[1]) cat1(1, vals, 1)
   # FP_r decreases and FP_f increases/remains unchanged
-  if(!r_bool[2] && f_bool_leq[2] && h_rf.1[2]) {
-    cat1(2, vals, 2)
-    }
+  if(!r_bool[2] && f_bool_leq[2] && h_rf.1[2]) cat1(2, vals, 2)
   # TN_f decreases/remains unchanged and TN_r increases
-  if(r_bool[3] && f_bool_geq[3] && h_rf.1[3]) {
-    cat1(3, vals, 3)
-    }
+  if(r_bool[3] && f_bool_geq[3] && h_rf.1[3]) cat1(3, vals, 3)
     # FN_r decreases and FN_f increases/remains unchanged
-  if(!r_bool[4] && f_bool_leq[4] && h_rf.1[4]) {
-    cat1(4, vals, 4)
-    }
+  if(!r_bool[4] && f_bool_leq[4] && h_rf.1[4]) cat1(4, vals, 4)
 
   cat1 <- function(i, vals, val_i) {
     cat("Increases in aggregate CAI after deleting item ", i, "may be
@@ -314,30 +309,25 @@ delta_h <- function(h_R, h_i_del) {
 #'
 #' @description
 #' \code{acc_indices_h} takes in outputs from [PartInv()]
-#' and returns two restructured data frames with the classification accuracy
-#' indices for the reference and focal groups under strict invariance and
+#' and returns two restructured data frames with the CAI 
+#' for the reference and focal groups under strict invariance and
 #' partial invariance conditions, and the corresponding h for the difference in
 #' CAI between the two invariance conditions for each group.
-#' @param strict_output Output from [PartInv()] under strict invariance.
-#' @param partial_output Output from [PartInv()] under partial invariance.
+#' @param strict_output Output summary from [PartInv()] under strict invariance.
+#' @param partial_output Output summary from [PartInv()] under partial invariance.
+#' @param n_g Number of groups.
 #' @return A 8 x 3 dataframe with columns `strict invariance`,
 #'        `partial invariance`, and `h`.
 #' @export
-acc_indices_h <- function(strict_output, partial_output) {
+acc_indices_h <- function(strict_output, partial_output, n_g) {
   r_names <- c("TP", "FP", "TN", "FN", "PS", "SR", "SE", "SP")
 
-  ref_par_strict <- partial_output$summary[1][, 1]
-  ref_strict <- strict_output$summary_mi[1][, 1]
-
-  df_ref <- data.frame(SFI =  ref_strict,
-                       PFI = ref_par_strict, row.names = r_names)
-  df_ref["h"] <- cohens_h(df_ref$SFI, df_ref$PFI)
-
-  f_par_strict <- partial_output$summary[2][, 1]
-  f_strict <- strict_output$summary_mi[2][, 1]
-  df_f <- data.frame(SFI = f_strict,
-                     PFI = f_par_strict, row.names = r_names)
-  df_f["h"] <- cohens_h(df_f$SFI, df_f$PFI)
+  df_ref <- data.frame(cohens_h(strict_output[1], partial_output[1]), row.names = r_names)
+  focals <- list(strict_output[, 2:n_g], partial_output[, 2:n_g])
+  df_f <- data.frame(lapply(focals, FUN = function(x) cohens_h(x[[1]], x[[2]])), 
+                     row.names = r_names)
+  colnames(df_f) <- paste0("h_", colnames(strict_output[, 2:n_g])) 
+  colnames(df_ref) <- paste0("h_", colnames(strict_output[1]))
   return(list("Reference" = df_ref, "Focal" = df_f))
 }
 

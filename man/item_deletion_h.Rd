@@ -184,6 +184,7 @@ multi_dim <- item_deletion_h(propsel = .05, n_dim = 5,
                              Theta_r = diag(1, 5),
                              Theta_f = diag(c(1, .95, .80, .75, 1)),
                              plot_contour = TRUE)
+print(multi_dim)
 # Single dimension example
 single_dim <- item_deletion_h(propsel = .10,
                                weights_item = c(1, 0.9, 0.8, 1),
@@ -196,4 +197,15 @@ single_dim <- item_deletion_h(propsel = .10,
                                nu_f = c(.225, -.05, .240, -.025),
                                Theta_r = diag(.96, 4),
                                n_dim = 1, plot_contour = TRUE)
+print(single_dim)
+# Using cfa_fit
+library(lavaan)
+HS <- HolzingerSwineford1939
+HS$sex <- as.factor(HS$sex)
+HS.model <- ' visual  =~ x1 + x2 + x3
+              textual =~ x4 + x5 + x6
+              speed   =~ x7 + x8 + x9 '
+
+fit <- cfa(HS.model, data = HS, group = "sex")
+item_deletion_h(cfa_fit = fit, propsel = .05)
 }

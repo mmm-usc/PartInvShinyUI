@@ -25,17 +25,17 @@
 #'     variance-covariance matrices where `g` is the number of groups and `d` is
 #'     the number of latent dimensions. The first element is assumed to belong
 #'     to the reference group.
-#' @param lambda A list of length `g` containing `n x d` factor loading matrices
+#' @param lambda A list of length `g` containing `n_i x d` factor loading matrices
 #'     where `g` is the number of groups, `d` is the number of latent dimensions,
 #'     and `n` is the number of items in the scale. The first element is assumed
 #'     to belong to the reference group.
-#' @param nu A list of length `g` containing `1 x n` measurement intercept
-#'     vectors where `g` is the number of groups and `n` is the number of items
+#' @param nu A list of length `g` containing `1 x n_i` measurement intercept
+#'     vectors where `g` is the number of groups and `n_i` is the number of items
 #'     in the scale. The first element is assumed to belong to the reference
 #'     group.
-#' @param theta A list of length `g` containing `1 x n` vectors or `n x n`
+#' @param theta A list of length `g` containing `1 x n_i` vectors or `n_i x n_i`
 #'     matrices of unique factor variances and covariances, where `g` is the
-#'     number of groups and `n` is the number of items in the scale. The first
+#'     number of groups and `n_i` is the number of items in the scale. The first
 #'     element is assumed to belong to the reference group.
 #' @param alpha_r,alpha_f,nu_r,nu_f,Theta_r,Theta_f,psi_r,psi_f,lambda_r,lambda_f,phi_r,phi_f,tau_r,tau_f,pmix_ref
 #'        Deprecated; included only for backward compatibility. When comparing two
@@ -124,6 +124,7 @@
 #'                              Theta_r = diag(1, 5),
 #'                              Theta_f = diag(c(1, .95, .80, .75, 1)),
 #'                              plot_contour = TRUE)
+#' print(multi_dim)
 #' # Single dimension example
 #' single_dim <- item_deletion_h(propsel = .10,
 #'                                weights_item = c(1, 0.9, 0.8, 1),
@@ -136,6 +137,32 @@
 #'                                nu_f = c(.225, -.05, .240, -.025),
 #'                                Theta_r = diag(.96, 4),
 #'                                n_dim = 1, plot_contour = TRUE)
+#' print(single_dim)
+#' # Using cfa_fit
+#' library(lavaan)
+#' HS <- HolzingerSwineford1939
+#' HS$sex <- as.factor(HS$sex)
+#' HS.model <- ' visual  =~ x1 + x2 + x3
+#'               textual =~ x4 + x5 + x6
+#'               speed   =~ x7 + x8 + x9 '
+#' 
+#' fit <- cfa(HS.model, data = HS, group = "sex")
+#' item_deletion_h(cfa_fit = fit, propsel = .05)
+#' 
+#' # Simulate random data to fit a multigroup cfa
+#' 
+#' set.seed(7)  
+#' sim_m <-
+#'   "f =~ c(1, .7, 1) * x1 + c(.8, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5
+#'    f ~~ c(1, 1.3, 1.5) * f
+#'    f ~  c(0, .5, 1) * 1
+#'    x1 ~ c(0, .3, 0) * 1
+#'    x3 ~ c(.3, 0, -.3) * 1
+#'    x1 ~~ c(1, .5, 1) * x1"
+#' dat_sim <- simulateData(sim_m, sample.nobs = c(80, 100, 110))
+#' fit_sim <- lavaan::cfa(model = sim_m, data = dat_sim, group = "group")
+#' item_deletion_h(cfa_fit = fit_sim, propsel = .05)
+
 #' @export
 item_deletion_h <- function(cfa_fit = NULL,
                             propsel = NULL,
@@ -160,77 +187,29 @@ item_deletion_h <- function(cfa_fit = NULL,
                             nu_r = NULL, nu_f = nu_r,
                             Theta_r = NULL, Theta_f = Theta_r,
                             ...) {
+  functioncall <- match.call()
   
   # for backward compatibility with different input names ####
-  if (is.null(cfa_fit) && (is.null(nu) && !is.null(nu_r))) {
-    nu <- vector(2, mode = "list")
-    nu[[1]] <- nu_r; nu[[2]] <- nu_f
-  }
-  if (is.null(cfa_fit) && (is.null(nu) && !is.null(tau_r))) {
-    nu <- vector(2, mode = "list")
-    nu[[1]] <- tau_r; nu[[2]] <- tau_f
-  }
-  if (is.null(cfa_fit) && 
-      ((is.null(alpha) || is.logical(alpha)) && !is.null(alpha_r))) {
-    alpha <- vector(2, mode = "list")
-    alpha[[1]] <- as.numeric(alpha_r); alpha[[2]] <- as.numeric(alpha_f)
-  }
-  if (is.null(cfa_fit) && 
-      ((is.null(psi) || is.logical(psi)) && !is.null(phi_r))) {
-    psi <- vector(2, mode = "list")
-    psi[[1]] <- phi_r; psi[[2]] <- phi_f
-  }
-  if (is.null(cfa_fit) && 
-      ((is.null(psi) || is.logical(psi)) && !is.null(psi_r))) {
-    psi <- vector(2, mode = "list")
-    psi[[1]] <- as.numeric(psi_r); psi[[2]] <- as.numeric(psi_f)
-  }
-  if (is.null(lambda) && !is.null(lambda_r)) {
-    lambda <- vector(2, mode = "list")
-    lambda[[1]] <- lambda_r; lambda[[2]] <- lambda_f
-  }
-  if (is.null(theta) && !is.null(Theta_r)) {
-    theta <- vector(2, mode = "list")
-    theta[[1]] <- Theta_r; theta[[2]] <- Theta_f
-  }
-  if (is.null(pmix) && !is.null(pmix_ref)) {
-    pmix <- c(pmix_ref, 1 - pmix_ref) # assuming two groups
-  }
-  
-  if (!is.null(cfa_fit)) {
-    if (!any(unlist(lapply(list(nu, alpha, psi, lambda, theta), is.null)))) {
-      message("Both cfa_fit and parameter estimates were provided. Defaulting
-               to using cfa_fit.")
-    }
-    lav_cfa <- unnest_list(lavInspect(cfa_fit, "est"))
-    # extract the parameter estimates from the cfa fit object
-    alpha <- lapply(lav_cfa$alpha, FUN = c)
-    nu <- lapply(lav_cfa$nu, FUN = c)
-    theta <- lav_cfa$theta
-    lambda <- lav_cfa$lambda
-    psi <- lav_cfa$psi
-  }
-  #####
-  
-  num_g <- length(alpha)
-  n <- length(nu[[1]])
-  d <- length(alpha[[1]])
-  
-  if (length(weights_latent) == 1) weights_latent <- rep(1, d)
-  
-  if (is.null(weights_item)) weights_item <- rep(1, n)
-  if (!is.null(weights_item) & length(weights_item) != n) {
-    stop("Please provide a weights_item vector of the correct length.")
-  }
-  
-  if (is.null(weights_latent)) weights_latent <- rep(1, d)
-  if (!is.null(weights_latent) & length(weights_latent) != d) {
-    stop("Please provide a weights_latent vector of the correct length.")
-  }
-  
-  # setup ####
-  N <- length(weights_item)
-  
+  source("R/prep_params.R")
+  # pl: parameter list after adjustments
+  pl <- prep_params(cfa_fit, propsel, cut_z, weights_item, weights_latent, 
+                    alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour,
+                    show_mi_result, labels, n_dim, n_i_per_dim, 
+                    user_specified_items, delete_one_cutoff, alpha_r, alpha_f,
+                    phi_r, psi_r, psi_f, lambda_r, lambda_f, tau_r, tau_f, nu_r,
+                    nu_f, Theta_r, Theta_f, func_called = "item_deletion_h")
+  alpha <- pl$alpha
+  psi <- pl$psi
+  lambda <- pl$lambda
+  nu <- pl$nu
+  theta <- pl$theta
+  pmix <- pl$pmix
+  n_i <- pl$n_i
+  num_g <- pl$num_g
+  d <- pl$d
+  weights_latent <- pl$weights_latent
+  weights_item <- pl$weights_item
+
   # Determine which set of items will be returned
   return_items <- c()
   if(is.null(user_specified_items)) { # default: return only the biased items.
@@ -240,75 +219,56 @@ item_deletion_h <- function(cfa_fit = NULL,
     if (!all(user_specified_items == floor(user_specified_items))) {
       stop("'user_specified_items' should only contain integers corresponding
              to item indices.")}
-    if (!all(user_specified_items < N + 1)) {
+    if (!all(user_specified_items < n_i + 1)) {
       stop("'user_specified_items' cannot take integers larger than the scale
              length.")}
     return_items <- user_specified_items
   }
   
   store_str <- store_par <- s_p_ref_list <- s_p_foc_list <-
-    vector(mode = "list", N + 1)
-  delta_s_p_ref <- delta_s_p_foc <- delta_h_R_Ef <-
-    as.data.frame(matrix(nrow = 8, ncol = N))
-  h_R_Ef <- h_s_p_ref <- h_s_p_foc <- 
-    as.data.frame(matrix(nrow = 8, ncol = N + 1))
-  acai_p <- acai_s <- h_acai_s_p <- 
-    as.data.frame(matrix(nrow = 4, ncol = N + 1))
-  h_acai_p <-  delta_h_s_p_acai <- as.data.frame(matrix(nrow = 4, ncol = N))
-  AI_ratios <- as.data.frame(matrix(nrow = 2, ncol = N + 1))
+    vector(mode = "list", n_i + 1)
+  delta_s_p_ref <- delta_h_R_Ef <- as.data.frame(matrix(nrow = 8, ncol = n_i)) #delta_s_p_foc <-
+  
+  delta_s_p_foc <- list()
+  h_R_Ef <- as.data.frame(matrix(nrow = 8, ncol = n_i + 1)) #h_s_p_ref <- h_s_p_foc <- 
+  acai_p <- acai_s <- h_acai_s_p <- as.data.frame(matrix(nrow = 4, ncol = n_i + 1))
+  h_acai_p <-  delta_h_s_p_acai <- as.data.frame(matrix(nrow = 4, ncol = n_i))
+  AI_ratios <- as.data.frame(matrix(nrow = num_g + 1, ncol = n_i + 1))
 
-  out_elements_par <- c("propsel", "cutpt_xi", "cutpt_z", "summary", 
-                            "bivar_data", "ai_ratio", "labels", "functioncall")
+  out_elements_par <- c("propsel", "cutpt_xi", "cutpt_z", "summary",
+                        "bivar_data", "ai_ratio", "labels", "functioncall")
   out_elements_str <- c(paste0(out_elements_par[1:6], "_mi"), out_elements_par[7:8])
   
   # Call PartInv with the full item set under partial and strict invariance ###
   store_par[[1]] <- 
-    PartInv(cfa_fit = cfa_fit, 
-            propsel = propsel, 
-            cut_z = cut_z, 
-            weights_item = weights_item,
-            weights_latent = weights_latent, 
-            alpha = alpha,
-            psi = psi,
-            nu = nu,
-            theta = theta,
-            lambda = lambda,
-            pmix = pmix, 
-            plot_contour = plot_contour,
-            labels = c("Reference", "Focal"), 
-            show_mi_result = TRUE)
+    PartInv(cfa_fit = NULL, propsel = propsel, cut_z = cut_z, 
+            weights_item = weights_item, weights_latent = weights_latent, 
+            alpha = alpha, psi = psi, nu = nu, theta = theta, lambda = lambda,
+            pmix = pmix, plot_contour = plot_contour,
+            labels = labels, show_mi_result = TRUE)
   class(store_par[[1]]) <- "PartInv"
-
   store_str[[1]] <- store_par[[1]][out_elements_str]
   class(store_str[[1]]) <- "PartInv"
-  
-  partial <- store_par[[1]]$summary
-  strict  <- store_str[[1]]$summary_mi
 
-  # Compare CAI for reference and focal groups under strict vs.
-  # partial invariance conditions and compute h for full item set
-  acc <- acc_indices_h(store_str[[1]], store_par[[1]])
-
+  # h: strict vs. partial invariance (full item set) for all groups
+  acc <- acc_indices_h(store_str[[1]]$summary_mi, 
+                       store_par[[1]]$summary, n_g = num_g)
   s_p_ref_list[[1]] <- acc$Reference; s_p_foc_list[[1]] <- acc$Focal
 
-  h_s_p_ref[1] <- acc$Reference$h; h_s_p_foc[1] <- acc$Focal$h
+  h_R_Ef[1] <- apply(store_par[[1]]$summary[,(num_g + 1):(2 * num_g - 1)], 
+                     MARGIN = 2,
+                     FUN = function(x) cohens_h(store_par[[1]]$summary[,1], x))#cohens_h(partial$Reference, partial$`E_R(Focal)`)
 
-  h_R_Ef[1] <- cohens_h(partial$Reference, partial$`E_R(Focal)`)
+  # Compute aggregate CAI on the full item set
+  acai_p[1] <- get_aggregate_CAI(pmix, store_par[[1]]$summary, inv_cond = "partial")
+  acai_s[1] <- get_aggregate_CAI(pmix, store_str[[1]]$summary_mi, inv_cond = "strict")
 
-  # Re-weight SE, SR, SP by focal and group proportions to compute
-  # aggregate indices under partial invariance for the full item set
-  acai_p[1] <- get_aggregate_CAI(pmix, partial, inv_cond = "partial")
-  # Repeat for strict invariance
-  acai_s[1] <-  get_aggregate_CAI(pmix, strict, inv_cond = "strict")
-
-  # Compute h for the difference between strict and partial invariance for
-  # aggregate SE, SR, SP
+  # h: difference between strict and partial invariance for aggregate CAI
   h_acai_s_p[1] <- cohens_h(acai_s[1], acai_p[1])
   AI_ratios[, 1] <- as.vector(c(store_str[[1]]$ai_ratio_mi, 
                                 store_par[[1]]$ai_ratio), mode = "double")
 
-  # If the user supplied a new cutoff, set cut_z to that and set propsels to NULL.
-  # If no cutoff was inputted, set propsel based on PartInv output with all items
+  # If no cutoff was provided, set propsel based on PartInv output with all items
   if(is.null(delete_one_cutoff)) {
     propsel_p <- store_par[[1]]$propsel
     propsel_s <- store_str[[1]]$propsel_mi
@@ -322,80 +282,64 @@ item_deletion_h <- function(cfa_fit = NULL,
   # Item deletion scenarios ####
   for (i in seq_len(length(weights_item) + 1)[-1]) {
     # Assign a weight of 0 to the item to be deleted (indexed at i - 1), and
-    # redistribute the weight from this item across the non-deleted items
+    # redistribute the weight from this item across the retained items
     take_one_out <- redistribute_weights(weights_item, n_dim = n_dim,
-                                         n_i_per_dim = n_i_per_dim,
-                                         del_i = i - 1)
+                                         n_i_per_dim = n_i_per_dim, del_i = i - 1)
     
     # Call PartInv with the new weights under partial invariance ####
     store_par[[i]] <- 
-      PartInv(cfa_fit = cfa_fit, 
-              propsel = propsel_p, 
-              cut_z = cut_z,
-              weights_item = take_one_out, 
-              weights_latent = weights_latent,
-              alpha = alpha,
-              psi = psi,
-              nu = nu,
-              theta = theta,
-              lambda = lambda,
-              pmix = pmix, 
-              plot_contour = plot_contour,
-              labels = c("Reference", "Focal"),
-              show_mi_result = TRUE
-              )
+      PartInv(cfa_fit = NULL, propsel = propsel_p, cut_z = cut_z,
+              weights_item = take_one_out, weights_latent = weights_latent,
+              alpha = alpha, psi = psi, nu = nu, theta = theta, lambda = lambda,
+              pmix = pmix, plot_contour = plot_contour,
+              labels = labels, show_mi_result = TRUE)
     class(store_par[[i]]) < "PartInv"
-    
     store_str[[i]] <- store_par[[i]][out_elements_str]
     class(store_str[[i]]) <- "PartInv"
     
-    partial <- store_par[[i]]$summary
-    strict <- store_str[[i]]$summary_mi
-
     # Check whether improvements in ACAI may be misleading due pmix
-    err_improv_acai(i = i, store_summary_full = store_par[[1]]$summary,
-                    store_summary_del1 = store_par[[i]]$summary)
-    err_improv_acai(i = i, store_summary_full = store_str[[1]]$summary_mi,
-                    store_summary_del1 = store_str[[i]]$summary_mi)
+    err_improv_acai(i = i, s_full = store_par[[1]]$summary,
+                    s_del1 = store_par[[i]]$summary, n_g = num_g)
+    err_improv_acai(i = i, s_full = store_str[[1]]$summary_mi,
+                    s_del1 = store_str[[i]]$summary_mi, n_g = num_g)
     
-    # Compute h for the difference in CAI for reference and focal
-    # groups under strict vs. partial invariance conditions
-    acc_del_i <- acc_indices_h(store_str[[i]], store_par[[i]])
+    # h: strict vs. partial invariance (delete-one item set) for all groups
+    acc_del_i <- acc_indices_h(store_str[[i]]$summary_mi, 
+                               store_par[[i]]$summary, n_g = num_g)
     s_p_ref_list[[i]] <- acc_del_i$Reference
     s_p_foc_list[[i]] <- acc_del_i$Focal
 
-    h_s_p_ref[i] <- s_p_ref_list[[i]]$h
-    h_s_p_foc[i] <- s_p_foc_list[[i]]$h
+    # delta h: comparing CAI under strict vs. partial invariance when item i is 
+    # deleted (i.e. the change in h_s_p_ref and h_s_p_foc) for all groups
+    delta_s_p_ref[i - 1] <- delta_h(s_p_ref_list[[1]], s_p_ref_list[[i]])
+    delta_s_p_foc[[i - 1]] <- 
+      apply(s_p_foc_list[[i]], MARGIN = 2, 
+            FUN = function(x) delta_h(s_p_foc_list[[1]], x))
+    names(delta_s_p_foc[[i-1]]) <- paste0("delta_", names(delta_s_p_foc[[i-1]]))
+    # now each list item is the delta_h for a focal group if item i is deleted>?
+    # need to double check
+    
+    
+    # h: difference in CAI under partial invariance for the ref group vs. for 
+    # the expected CAI for the focal group with the full item set
+    h_R_Ef[i] <- cohens_h(store_par[[i]]$summary$Reference, 
+                          store_par[[i]]$summary$`E_R(Focal)`)
 
-    # Compute the change in Cohen's h comparing CAI for the
-    # reference and focal groups under strict vs. partial invariance when item i
-    # is deleted i.e. the change in h_s_p_ref and h_s_p_foc
-    delta_s_p_ref[i - 1] <- delta_h(h_s_p_ref[1], h_s_p_ref[i])
-    delta_s_p_foc[i - 1] <- delta_h(h_s_p_foc[1], h_s_p_foc[i])
-    # Compute h for the difference in CAI under partial invariance
-    # for the reference group vs. for the expected CAI for the
-    # focal group if it followed the same distribution as the reference group
-    # (`E_R(Focal)`)
-    h_R_Ef[i] <- cohens_h(partial$Reference, partial$`E_R(Focal)`)
-
-    # Compute the change in Cohen's h comparing CAI under partial
-    # invariance for the reference group vs. for the expected CAI
-    # for the focal group if it followed the same distribution as the reference
-    # group when item i is deleted, i.e. the change in h_R_Ef_del
+    # delta_h: change in h comparing CAI under partial invariance for 
+    # the ref group vs. for the expected CAI for the focal group when item i is
+    # deleted, i.e. the change in h_R_Ef_del
     delta_h_R_Ef[i-1] <- delta_h(h_R_Ef[1], h_R_Ef[i])
 
-    # Compute aggregate SR, SE, SP indices under partial invariance by weighting
-    # CAI for the reference and focal groups by their group proportions
-    acai_p[i] <- get_aggregate_CAI(pmix, partial, inv_cond = "partial")
-    # Repeat for strict invariance
-    acai_s[i] <- get_aggregate_CAI(pmix, strict, inv_cond = "strict")
-    # Compute Cohen's h for the difference between aggregate SE, SR, SP under
-    # strict vs. partial invariance
+    # Weight the aggregate SR, SE, SP indices under partial and strict invariance
+    acai_p[i] <- get_aggregate_CAI(pmix, store_par[[i]]$summary, 
+                                   inv_cond = "partial")
+    acai_s[i] <- get_aggregate_CAI(pmix, store_str[[i]]$summary_mi, 
+                                   inv_cond = "strict")
+    # h for the difference between aggregate SE, SR, SP under strict vs. partial invariance
     h_acai_s_p[i] <- cohens_h(acai_s[i], acai_p[i])
-    # Compute how aggregate SR, SE, SP indices change when an item is deleted
-    # under partial invariance
+    # h: change in aggregate CAI when an item is deleted under partial invariance
     h_acai_p[i - 1] <- cohens_h(acai_p[1], acai_p[i])
-
+    
     delta_h_s_p_acai[i - 1] <- delta_h(h_acai_s_p[1], h_acai_s_p[i])
 
     AI_ratios[, i] <- as.vector(c(store_str[[i]]$ai_ratio_mi, 
@@ -409,8 +353,8 @@ item_deletion_h <- function(cfa_fit = NULL,
                  "s_p_ref_list" = s_p_ref_list, "s_p_foc_list" = s_p_foc_list, 
                  "acai_p" = acai_p, "h_acai_s_p" = h_acai_s_p, 
                  "h_acai_p" = h_acai_p, "delta_h_s_p_acai" = delta_h_s_p_acai, 
-                 "delta_h_R_Ef" = delta_h_R_Ef, "h_s_p_ref" = h_s_p_ref, 
-                 "h_s_p_foc" = h_s_p_foc, "return_items" = return_items)
+                 "delta_h_R_Ef" = delta_h_R_Ef, 
+                 "return_items" = return_items)
    vlist <- format_item_del(N, l = vars)
 
   # Declare classes
@@ -426,15 +370,19 @@ item_deletion_h <- function(cfa_fit = NULL,
     "AI Ratio" = vlist$AI_ratios,
     "h CAI Ref-EF" = vlist$h_R_Ef,
     "delta h CAI Ref-EF (deletion)" = vlist$delta_h_R_Ef,
-    "h CAI SFI-PFI" = list("ref"= vlist$h_s_p_ref, "foc" = vlist$h_s_p_foc),
     "delta h SFI-PFI (deletion)" = list("ref" = vlist$delta_s_p_ref,
-                                 
-                                               "foc" = vlist$delta_s_p_foc),
+                                        "foc" = vlist$delta_s_p_foc),
     "h SFI-PFI by groups" = list("reference" = vlist$h_s_p_list_ref, 
-                               "focal" = vlist$h_s_p_list_foc),
+                                 "focal" = vlist$h_s_p_list_foc),
     "PartInv" = list("strict" = vlist$store_str, "partial" = vlist$store_par),
     "return_items" = return_items)
   class(returned) <- "itemdeletion"
 
   return(returned)
 }
+#"h_s_p_ref" = h_s_p_ref, #"h_s_p_foc" = h_s_p_foc, 
+#delta_h(h_s_p_ref[1], h_s_p_ref[i])
+#delta_h(s_p_foc_list[[1]], x))#delta_h(h_s_p_foc[1], h_s_p_foc[i])
+#h_s_p_ref <- h_s_p_foc <- list()#h_s_p_ref[[1]] <- acc$Reference#h_s_p_foc[[1]] <- acc$Focal# h_s_p_ref[1] <- acc$Reference$h; h_s_p_foc[1] <- acc$Focal$h
+# h_s_p_ref[i] <- s_p_ref_list[[i]]$h # h_s_p_foc[i] <- s_p_foc_list[[i]]$h # h_s_p_ref[[i]] <- s_p_ref_list[[i]]#  h_s_p_foc[[i]] <- s_p_foc_list[[i]]
+#"h CAI SFI-PFI" = list("ref"= vlist$h_s_p_ref,  #"foc" = vlist$h_s_p_foc),
