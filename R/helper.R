@@ -202,9 +202,8 @@ mn_sd_cov <- function(weights_item, weights_latent, alpha, psi, lambda, nu,
 #'    \item{bivar_data}{The mean, standard deviation, and covariance of latent 
 #'     and observed variables for each group.}
 compute_cai <- function(weights_item, weights_latent, alpha, psi, lambda, nu, 
-                        theta, pmix, propsel, labels, cut_z = NULL, 
+                        theta, pmix, propsel, labels, cut_z = NULL, num_g,
                         is_mi = FALSE) {
-  num_g <- length(alpha)
   lst <- mn_sd_cov(weights_item, weights_latent, alpha, psi, lambda, nu, theta)
 
   if (!is.null(propsel)) {  # if there is an input for selection proportion

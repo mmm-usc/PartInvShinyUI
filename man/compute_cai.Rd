@@ -16,6 +16,7 @@ compute_cai(
   propsel,
   labels,
   cut_z = NULL,
+  num_g,
   is_mi = FALSE
 )
 }

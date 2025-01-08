@@ -4,22 +4,21 @@
 \alias{err_improv_acai}
 \title{Check for misleading improvements in aggregate CAI}
 \usage{
-err_improv_acai(i, store_summary_full, store_summary_del1)
+err_improv_acai(i, s_full, s_del1, num_g)
 }
 \arguments{
 \item{i}{Index of item under consideration.}
 
-\item{store_summary_full}{PartInv summary for the case where all items are
-retained.}
+\item{s_full}{PartInv summary for the case where all items are retained.}
 
-\item{store_summary_del1}{PartInv summary for the case where item i is
-excluded.}
+\item{s_del1}{PartInv summary for the case where item i is excluded.}
+
+\item{num_g}{Number of groups}
 }
 \description{
 \code{err_improv_acai} checks if any improvement observed in aggregate CAI
 may have resulted from the higher mixing proportion of the reference group
 masking worsening performance for the focal group. If the effect size of any
 change indicating worse performance for the focal group and better
-performance for the reference group is larger than 0.1, prints a warning
-message.
+performance for the reference group is larger than 0.1, prints a warning.
 }

@@ -164,7 +164,7 @@ HS.model <- ' visual  =~ x1 + x2 + x3
 fit <- cfa(HS.model, data = HS, group = "sex")
 PartInv(fit, propsel = .7, plot_contour = TRUE, show_mi_result = TRUE)
 # Two groups, single dimension
-PartInv(propsel = .30,
+PartInv(cfa_fit = NULL, propsel = .30,
         weights_item = c(1, 1, 1, 1),
         weights_latent = 1,
         alpha = list(0, 0),

@@ -28,9 +28,6 @@ CESD_pos <- item_deletion_h(cut_z = 16/60 * 12,
                             plot_contour = FALSE,
                             print_formatted = TRUE)
 
-
-
-
 test_that("AI ratio is > 0 for all cells", {
   expect_true(all(CESD_pos$`AI Ratio` > 0))
 })
@@ -193,8 +190,8 @@ ex_partial <- PartInv(propsel = propsel,
                       plot_contour = plot_contour,
                       labels = c("Reference", "Focal"))
 
-test_that("acc_indices_h() returns data frames", {
-  acc <- vapply(acc_indices_h(ex_strict, ex_partial), FUN = inherits, 
+test_that("str_par_h() returns data frames", {
+  acc <- vapply(str_par_h(ex_strict, ex_partial), FUN = inherits, 
                 what = c("data.frame"), FUN.VALUE = logical(1))
   expect_true(any(acc))
 })
@@ -207,4 +204,50 @@ test_that("cohens_h() is computed correctly for comparing reference with the
                              ex_partial$summary$`E_R(Focal)`))
   
 })
+
+
+# la <- list(
+#   matrix(c(0.32, 0.65, 0, 0, 0, 3, 0, 0.3, 0.7, 0.5), nrow = 5, byrow = FALSE),
+#   matrix(c(0.32, 0.65, 0, 0, 0, 0, 0, 0.3, 0.7, 0.5), nrow = 5, byrow = FALSE),
+#   matrix(c(0.32, 0.65, 0, 0, 0, 0, 0, 0.3, 0.7, 0.5), nrow = 5, byrow = FALSE),
+#   matrix(c(0.32, 0.65, 0, 0, 3, 0, 0, 0.3, 0.7, 0.5), nrow = 5, byrow = FALSE)
+# )
+# 
+# lambda_matrix <- matrix(0, nrow = 5, ncol = 2)
+# lambda_matrix[1:2, 1] <- c(.3, .6)
+# lambda_matrix[3:5, 2] <- c(.4, .75, .53)
+# 
+# lambda_matrix2 <- lambda_matrix
+# lambda_matrix3 <- lambda_matrix
+# lambda_matrix2[1,1] <- 3
+# lambda_matrix3[2,2] <- 3
+# 
+# print(find_mismatched_indices(
+#   list(lambda_matrix, lambda_matrix2, lambda_matrix3)))
+# 
+# # Example list with vectors
+# lv <- list(
+#   c(0.3, 0, 0.3, 3),
+#   c(0.3, 0, 0.3, 9),
+#   c(0.3, 0, 0.3, 3),
+#   c(0.3, 0, 0.3, 3)
+# )
+# print(find_mismatched_indices(lv))
+# 
+# # Example list with identical matrices
+# lms <- list(
+#   matrix(c(1, 2, 3, 4, 5, 6), nrow = 2, byrow = TRUE),
+#   matrix(c(1, 2, 3, 4, 5, 6), nrow = 2, byrow = TRUE),
+#   matrix(c(1, 2, 3, 4, 5, 6), nrow = 2, byrow = TRUE),
+#   matrix(c(1, 2, 3, 4, 5, 6), nrow = 2, byrow = TRUE)
+# )
+# 
+# print(find_mismatched_indices(lms))
+# 
+# nus <- list(c(.225, .025, .010, .240, .125), c(.225, -.05, .240, -.025, .125))
+# print(find_mismatched_indices(nus))
+
+
+
+
 

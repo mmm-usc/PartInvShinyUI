@@ -62,18 +62,18 @@ variance-covariance matrices where \code{g} is the number of groups and \code{d}
 the number of latent dimensions. The first element is assumed to belong
 to the reference group.}
 
-\item{lambda}{A list of length \code{g} containing \verb{n x d} factor loading matrices
+\item{lambda}{A list of length \code{g} containing \verb{n_i x d} factor loading matrices
 where \code{g} is the number of groups, \code{d} is the number of latent dimensions,
 and \code{n} is the number of items in the scale. The first element is assumed
 to belong to the reference group.}
 
-\item{theta}{A list of length \code{g} containing \verb{1 x n} vectors or \verb{n x n}
+\item{theta}{A list of length \code{g} containing \verb{1 x n_i} vectors or \verb{n_i x n_i}
 matrices of unique factor variances and covariances, where \code{g} is the
-number of groups and \code{n} is the number of items in the scale. The first
+number of groups and \code{n_i} is the number of items in the scale. The first
 element is assumed to belong to the reference group.}
 
-\item{nu}{A list of length \code{g} containing \verb{1 x n} measurement intercept
-vectors where \code{g} is the number of groups and \code{n} is the number of items
+\item{nu}{A list of length \code{g} containing \verb{1 x n_i} measurement intercept
+vectors where \code{g} is the number of groups and \code{n_i} is the number of items
 in the scale. The first element is assumed to belong to the reference
 group.}
 
@@ -208,4 +208,18 @@ HS.model <- ' visual  =~ x1 + x2 + x3
 
 fit <- cfa(HS.model, data = HS, group = "sex")
 item_deletion_h(cfa_fit = fit, propsel = .05)
+
+# Simulate random data to fit a multigroup cfa
+
+set.seed(7)  
+sim_m <-
+  "f =~ c(1, .7, 1) * x1 + c(.8, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5
+   f ~~ c(1, 1.3, 1.5) * f
+   f ~  c(0, .5, 1) * 1
+   x1 ~ c(0, .3, 0) * 1
+   x3 ~ c(.3, 0, -.3) * 1
+   x1 ~~ c(1, .5, 1) * x1"
+dat_sim <- simulateData(sim_m, sample.nobs = c(80, 100, 110))
+fit_sim <- lavaan::cfa(model = sim_m, data = dat_sim, group = "group")
+item_deletion_h(cfa_fit = fit_sim, propsel = .05)
 }

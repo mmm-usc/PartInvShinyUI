@@ -163,23 +163,16 @@ NULL
 #'         custom_colors = c("salmon1", "lightgreen", "skyblue1", "pink")
 #'         )
 #' @export
-PartInv <- function(cfa_fit = NULL, propsel = NULL, cut_z = NULL,
-                    weights_item = NULL,
-                    weights_latent = NULL,
+PartInv <- function(cfa_fit = NULL,
+                    propsel = NULL, cut_z = NULL,
+                    weights_item = NULL, weights_latent = NULL,
                     alpha = NULL, psi = NULL, lambda = NULL, theta = NULL, nu = NULL,
                     pmix = NULL,
                     pmix_ref = NULL, plot_contour = FALSE,
                     show_mi_result = FALSE,
                     labels = NULL,
                     custom_colors = NULL,
-                    kappa_r = NULL, kappa_f = kappa_r,
-                    alpha_r = NULL, alpha_f = alpha_r,
-                    phi_r = NULL, phi_f = phi_r,
-                    psi_r = NULL, psi_f = psi_r,
-                    lambda_r = NULL, lambda_f = lambda_r,
-                    tau_r = NULL, tau_f = tau_r,
-                    nu_r = NULL, nu_f = nu_r,
-                    Theta_r = NULL, Theta_f = Theta_r,
+                    kappa_r = NULL, kappa_f = kappa_r, alpha_r = NULL, alpha_f = alpha_r, phi_r = NULL, phi_f = phi_r, psi_r = NULL, psi_f = psi_r, lambda_r = NULL, lambda_f = lambda_r, tau_r = NULL, tau_f = tau_r, nu_r = NULL, nu_f = nu_r, Theta_r = NULL, Theta_f = Theta_r,
                     ...) {
 
   functioncall <- match.call()
@@ -203,49 +196,6 @@ PartInv <- function(cfa_fit = NULL, propsel = NULL, cut_z = NULL,
   d <- pl$d
   weights_latent <- pl$weights_latent
   weights_item <- pl$weights_item
-  
-  
-  if (!is.null(cfa_fit)) {
-    if (!all(unlist(lapply(list(nu, alpha, psi, lambda, theta), is.null)))) {
-      message("Both cfa_fit and parameter estimates were provided.
-Defaulting to using cfa_fit.")
-    }
-    lav_cfa <- unnest_list(lavInspect(cfa_fit, "est"))
-    # extract the parameter estimates from the cfa fit object
-    alpha <- lapply(lav_cfa$alpha, FUN = c)
-    nu <- lapply(lav_cfa$nu, FUN = c)
-    theta <- lav_cfa$theta
-    lambda <- lav_cfa$lambda
-    psi <- lav_cfa$psi
-  }
-  # end ####
-  
-  stopifnot("theta, nu, and lambda must be lists. Consider using `format_cfa_partinv()`." =
-              (all(is.list(theta) & is.list(nu) & is.list(lambda))))
-  stopifnot("Number of groups as indicated in the lengths of parameters must 
-              match." = length(alpha) == lengths(list(psi, lambda, nu, theta)))
-  stopifnot(
-    "Number of dimensions must match." =
-      (((lengths(alpha) == dim(psi)[1]) & (dim(psi)[1] == dim(psi)[2]) &
-          lengths(alpha) == unlist(lapply(lambda, ncol))))
-    )
-
-  #num_g <- length(alpha)
-  #n <- length(nu[[1]])
-  #d <- length(alpha[[1]])
-
-  #if (is.null(pmix)) pmix <- as.matrix(c(rep(1 / num_g, num_g)), ncol = num_g)
- # pmix <- as.vector(pmix)
-
-  stopifnot(
-    "Provide the correct number of mixing proportions." =
-      length(pmix) == length(alpha))
-  
-  if (length(weights_latent) == 1) weights_latent <- rep(1, d)
-  
-  if(length(alpha) == 1 & length(psi) == 1) {
-    stop("Check whether alpha and psi have the correct dimensions.")
-  }
 
   # If labels were not provided by the user or the number of labels provided or
   # the number of labels provided does not match num_g, define new labels
@@ -253,38 +203,8 @@ Defaulting to using cfa_fit.")
     labels <- c("Reference", paste0("Focal_", 1:(num_g - 1)))
   }
 
-  g <- c("r", paste0("f", 1:(num_g - 1)))
-  names(alpha) <- paste("alpha", g, sep = "_")
-  names(nu) <- paste("nu", g, sep = "_")
-  names(lambda) <- paste("lambda", g, sep = "_")
-  names(psi) <- paste("psi", g, sep = "_")
-  names(theta) <- paste("theta", g, sep = "_")
-
-  # Change any vector elements within the list theta into diagonal matrices
-  theta <- lapply(seq_along(theta), function(x) {
-    if (is.vector(theta[[x]])) {
-      theta[[x]] <- diag(theta[[x]])
-    } else {
-      theta[[x]] <- theta[[x]] # necessary to ensure conformable arguments later
-    }
-  })
-
-  alpha <- lapply(alpha, as.matrix)
-  psi <- lapply(psi, matrix, nrow = d, ncol = d)
-
-  if (is.null(weights_item)) weights_item <- rep(1, n_i)
-  if (!is.null(weights_item) & length(weights_item) != n_i) {
-    stop("Please provide a weights_item vector of the correct length.")
-  }
-  
-  if (is.null(weights_latent)) weights_latent <- rep(1, d)
-  if (!is.null(weights_latent) & length(weights_latent) != d) {
-    stop("Please provide a weights_latent vector of the correct length.")
-  }
-  
   out <- compute_cai(weights_item, weights_latent, alpha, psi, lambda, nu,
-    theta, pmix, propsel, labels, cut_z,
-    is_mi = FALSE
+    theta, pmix, propsel, labels, cut_z, num_g = num_g, is_mi = FALSE
   )
 
   if (out$propsel <= 0.01) warning("Proportion selected is 1% or less.")
@@ -312,7 +232,7 @@ Defaulting to using cfa_fit.")
 
     out_mi <- compute_cai(weights_item, weights_latent, alpha, psi,
       lambda_average_g, nu_average_g, theta_average_g,
-      pmix, propsel, labels, cut_z,
+      pmix, propsel, labels, cut_z, num_g = num_g, 
       is_mi = TRUE
     )
     colnames(out_mi$summary) <- labels
@@ -351,3 +271,7 @@ PartInvMulti_we <- function(...)
   .Deprecated("PartInv")
   # PartInv(...)
 }
+
+#if (is.null(pmix)) pmix <- as.matrix(c(rep(1 / num_g, num_g)), ncol = num_g)
+# pmix <- as.vector(pmix)
+

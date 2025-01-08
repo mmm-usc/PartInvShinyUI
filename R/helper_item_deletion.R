@@ -1,17 +1,17 @@
 
 # Function that performs formatting for various variables to be returned in
 # item_deletion_h
-format_item_del <- function(N, l) {
+format_item_del <- function(n_i, l) {
   # Format stored variables
-  names(l$AI_ratios) <- c("full", paste0("|", c(1:N)))
+  names(l$AI_ratios) <- c("full", paste0("|", c(1:n_i)))
   rownames(l$AI_ratios) <- c("AI_SFI", "AI_PFI")
-  names(l$h_R_Ef) <-  c("r-Ef", paste0("r-Ef|", c(1:N)))
+  names(l$h_R_Ef) <-  c("r-Ef", paste0("r-Ef|", c(1:n_i)))
   names(l$delta_s_p_ref) <- names(l$delta_s_p_foc) <- paste0("SFI, PFI|", 
-                                                             c(1:N))
+                                                             c(1:n_i))
   names(l$store_str) <- names(l$store_par) <- names(l$s_p_ref_list) <-
-    names(l$s_p_foc_list) <- c("full", paste0("|", c(1:N)))
-  names(l$acai_p) <- c("full", paste0("|", c(1:N)))
-  names(l$h_acai_p) <- paste0("|", c(1:N))
+    names(l$s_p_foc_list) <- c("full", paste0("|", c(1:n_i)))
+  names(l$acai_p) <- c("full", paste0("|", c(1:n_i)))
+  names(l$h_acai_p) <- paste0("|", c(1:n_i))
   rownames(l$h_acai_p) <- rownames(l$h_acai_s_p) <-
     c("h(PS*)", "h(SR*)", "h(SE*)", "h(SP*)")
   rownames(l$acai_p) <- c("PS*", "SR*", "SE*", "SP*")
@@ -123,10 +123,10 @@ get_aggregate_CAI <- function(pmix, store_summary, inv_cond) {
 #' @param i Index of item under consideration.
 #' @param s_full PartInv summary for the case where all items are retained.
 #' @param s_del1 PartInv summary for the case where item i is excluded.
-#' @param n_g Number of groups
-err_improv_acai <- function(i, s_full, s_del1, n_g) {
+#' @param num_g Number of groups
+err_improv_acai <- function(i, s_full, s_del1, num_g) {
   # store the focal groups' values in a list
-  focals <- list(s_full[,2:n_g], s_del1[,2:n_g])
+  focals <- list(s_full[,2:num_g], s_del1[,2:num_g])
   
   # compute Cohen's h for the difference between full and drop one indices for 
   # the reference group
@@ -136,13 +136,13 @@ err_improv_acai <- function(i, s_full, s_del1, n_g) {
   h_f <- lapply(focals, FUN = function(x) cohens_h(x[[1]], x[[2]])) #h_f <- cohens_h(f_full, f_del1)
   # Check for changes (boolean)
   r_bool <- s_full[,1] < s_del1[,1] 
-  f_bool_leq1 <- s_full[,2:n_g] <= s_del1[2:n_g]
+  f_bool_leq1 <- s_full[,2:num_g] <= s_del1[2:num_g]
   f_bool_leq <- apply(f_bool_leq1, MARGIN = 1, FUN = all)
-  f_bool_geq1 <- s_full[,2:n_g] >= s_del1[2:n_g]
+  f_bool_geq1 <- s_full[,2:num_g] >= s_del1[2:num_g]
   f_bool_geq <- apply(f_bool_leq1, MARGIN = 1, FUN = all)
   
   # wrangle into a matrix to apply operations by row
-  h_f_mat <- matrix(unlist(h_f), nrow = 8, ncol = (n_g - 1))
+  h_f_mat <- matrix(unlist(h_f), nrow = 8, ncol = (num_g - 1))
   # check the difference for the reference or focal groups has Cohen's h > 0.1
   h_rf.1 <- (h_r > 0.1 | apply((h_f_mat > 0.1), MARGIN = 1, FUN = all))
 
@@ -305,30 +305,46 @@ delta_h <- function(h_R, h_i_del) {
 #' the reference and the focal group.
 #'
 #' @name
-#' acc_indices_h
+#' str_par_h
 #'
 #' @description
-#' \code{acc_indices_h} takes in outputs from [PartInv()]
-#' and returns two restructured data frames with the CAI 
-#' for the reference and focal groups under strict invariance and
-#' partial invariance conditions, and the corresponding h for the difference in
-#' CAI between the two invariance conditions for each group.
-#' @param strict_output Output summary from [PartInv()] under strict invariance.
-#' @param partial_output Output summary from [PartInv()] under partial invariance.
-#' @param n_g Number of groups.
-#' @return A 8 x 3 dataframe with columns `strict invariance`,
-#'        `partial invariance`, and `h`.
+#' \code{str_par_h} takes in outputs from [PartInv()] and returns a list of
+#' length `num_g` where each element is a dataframe of 8 x 3. Each dataframe 
+#' contains columns for CAI under strict invariance, partial invariance, and h for
+#' the difference in these conditions.
+#' @param strict Output summary from [PartInv()] under strict invariance.
+#' @param partial Output summary from [PartInv()] under partial invariance.
+#' @param num_g Number of groups.
+#' @return A list of length `num_g`. 8 x 3 dataframe with columns `strict`,
+#'        `partial`, and `h`, where `h` is the Cohen's h for the difference
+#'        between the two invariance conditions for a particular group.
 #' @export
-acc_indices_h <- function(strict_output, partial_output, n_g) {
+str_par_h <- function(strict, partial, num_g) {
   r_names <- c("TP", "FP", "TN", "FN", "PS", "SR", "SE", "SP")
 
-  df_ref <- data.frame(cohens_h(strict_output[1], partial_output[1]), row.names = r_names)
-  focals <- list(strict_output[, 2:n_g], partial_output[, 2:n_g])
-  df_f <- data.frame(lapply(focals, FUN = function(x) cohens_h(x[[1]], x[[2]])), 
-                     row.names = r_names)
-  colnames(df_f) <- paste0("h_", colnames(strict_output[, 2:n_g])) 
-  colnames(df_ref) <- paste0("h_", colnames(strict_output[1]))
-  return(list("Reference" = df_ref, "Focal" = df_f))
+  # df_ref <- data.frame(strict[1], partial[1], cohens_h(strict[1], partial[1]), 
+  #                      row.names = r_names)
+  # df_foc_s <- data.frame(strict[, 2:num_g])
+  # #names(df_foc_s) <- paste0("s_", names(df_foc_s))
+  # df_foc_p <- data.frame(partial[, 2:num_g])
+  #names(df_foc_p) <- paste0("p_", names(df_foc_s))
+  
+  str_par_h <- 
+    lapply(c(rbind(strict, partial[1:num_g])), FUN = function(x) ({
+      mat <- matrix(x, ncol = num_g - 1, nrow = 8)
+      mat <- cbind(mat, "h" = cohens_h(mat[,1], mat[,2]))
+      colnames(mat) <- c("strict", "partial", "h")
+      rownames(mat) <- r_names
+      return(mat)
+    })
+  )
+  
+  #focals <- list(data.frame(strict[, 2:num_g]), data.frame(partial[, 2:num_g]))
+  # df_f <- data.frame(lapply(focals, FUN = function(x) cohens_h(x[[1]], x[[2]])), 
+  #                    row.names = r_names)
+  # colnames(df_f) <- paste0("h_", colnames(strict[, 2:num_g])) 
+  # colnames(df_ref) <- paste0("h_", colnames(strict[1]))
+  return("str_par_h" = str_par_h)#list("Reference" = df_ref, "Focal" = df_f))
 }
 
 #' @title
