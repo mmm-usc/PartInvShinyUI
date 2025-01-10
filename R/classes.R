@@ -16,9 +16,7 @@ summary_print <- function(x, ...) {
   print(round(x, digits = 3))
 }
 
-setClass("PartInvGroups", 
-         representation(tab = "data.frame")
-         )
+setClass("PartInvGroups", representation(tab = "data.frame"))
 
 #'@export
 print.PartInvGroups <- function(x, ...) {
@@ -120,7 +118,6 @@ setClass("PartInvList",
     itemset = "vector"
     )
 )
-
 
 #'@export
 print.PartInvList <- function(x, ...) {

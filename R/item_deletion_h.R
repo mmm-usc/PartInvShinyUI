@@ -37,7 +37,7 @@
 #'     matrices of unique factor variances and covariances, where `g` is the
 #'     number of groups and `n_i` is the number of items in the scale. The first
 #'     element is assumed to belong to the reference group.
-#' @param alpha_r,alpha_f,nu_r,nu_f,Theta_r,Theta_f,psi_r,psi_f,lambda_r,lambda_f,phi_r,phi_f,tau_r,tau_f,pmix_ref
+#' @param alpha_r,alpha_f,nu_r,nu_f,Theta_r,Theta_f,psi_r,psi_f,lambda_r,lambda_f,pmix_ref
 #'        Deprecated; included only for backward compatibility. When comparing two
 #'        groups, parameters with the '_r' suffix refer to the reference group while
 #'        parameters with the '_f' suffix refer to the focal group.
@@ -46,10 +46,6 @@
 #'     have equal size).
 #' @param plot_contour Logical; whether the contour of the two populations
 #'        should be plotted; default to `TRUE`.
-#' @param show_mi_result If \code{TRUE}, perform classification accuracy analysis
-#'        for both the input parameters and the implied parameters based on a
-#'        strict invariance model, with common parameter values as weighted
-#'        averages of the input values using `pmix_ref`.
 #' @param n_dim Number of dimensions, 1 by default. If the user does not supply
 #'        a different value, proceeds with the assumption that the scale is
 #'        unidimensional.
@@ -57,7 +53,7 @@
 #'        dimension; `NULL` by default. If the user provides a value for `n_dim`
 #'        that is \eqn{> 1} but leaves \code{n_i_per_dim = NULL}, assumes that
 #'        the subscales have an equal number of items.
-#' @param user_specified_items A vector; default to `NULL`. If the user does not
+#' @param delete_items A vector; default to `NULL`. If the user does not
 #'        input a vector of items, only the items determined to contain bias will
 #'        be considered for deletion.
 #' @param delete_one_cutoff (optional) User-specified cutoff to use in
@@ -173,22 +169,17 @@ item_deletion_h <- function(cfa_fit = NULL,
                             pmix = NULL,
                             pmix_ref = 0.5,
                             plot_contour = TRUE,
-                            show_mi_result = TRUE,
                             labels = c("Reference", "Focal"),
                             n_dim = 1,
                             n_i_per_dim = NULL,
-                            user_specified_items = NULL,
+                            delete_items = NULL,
                             delete_one_cutoff = NULL,
                             alpha_r = NULL, alpha_f = alpha_r,
-                            phi_r = NULL, phi_f = phi_r,
                             psi_r = NULL, psi_f = psi_r,
                             lambda_r = NULL, lambda_f = lambda_r,
-                            tau_r = NULL, tau_f = tau_r,
                             nu_r = NULL, nu_f = nu_r,
                             Theta_r = NULL, Theta_f = Theta_r,
                             ...) {
-  
-  #####
   functioncall <- match.call()
   
   # for backward compatibility with different input names ####
@@ -196,10 +187,10 @@ item_deletion_h <- function(cfa_fit = NULL,
   # pl: parameter list after adjustments
   pl <- prep_params(cfa_fit, propsel, cut_z, weights_item, weights_latent, 
                     alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour,
-                    show_mi_result, labels, n_dim, n_i_per_dim, 
-                    user_specified_items, delete_one_cutoff, alpha_r, alpha_f,
-                    phi_r, psi_r, psi_f, lambda_r, lambda_f, tau_r, tau_f, nu_r,
-                    nu_f, Theta_r, Theta_f, func_called = "item_deletion_h")
+                    labels, n_dim, n_i_per_dim, delete_items, delete_one_cutoff, 
+                    alpha_r, alpha_f, phi_r = NULL, phi_f = NULL, 
+                    psi_r, psi_f, lambda_r, lambda_f, tau_r = NULL, tau_f = NULL, 
+                    nu_r, nu_f, Theta_r, Theta_f)
   alpha <- pl$alpha
   psi <- pl$psi
   lambda <- pl$lambda
@@ -214,16 +205,16 @@ item_deletion_h <- function(cfa_fit = NULL,
 
   # # Determine which set of items will be returned
   # return_items <- c()
-  # if(is.null(user_specified_items)) { # default: return only the biased items.
+  # if(is.null(delete_items)) { # default: return only the biased items.
   #     return_items <- determine_biased_items(lambda, nu, theta)
   #     return_items <-  setdiff(return_items, which(weights_item == 0))
   # } else {
-  #   if (!all(user_specified_items == floor(user_specified_items))) {
-  #     stop("'user_specified_items' should only contain integers corresponding
+  #   if (!all(delete_items == floor(delete_items))) {
+  #     stop("'delete_items' should only contain integers corresponding
   #            to item indices.")}
-  #   if (!all(user_specified_items < n_i + 1)) {
-  #     stop("'user_specified_items' cannot take integers > the scale length.")}
-  #   return_items <- user_specified_items
+  #   if (!all(delete_items < n_i + 1)) {
+  #     stop("'delete_items' cannot take integers > the scale length.")}
+  #   return_items <- delete_items
   # }
   return_items_labels <- paste0("del_i", 1:n_i)#paste0("del_i", return_items)
   
@@ -233,13 +224,8 @@ item_deletion_h <- function(cfa_fit = NULL,
     colnames(delta_h_str_par_h.foc.del_i[[k]]) <- return_items_labels
     }
   
-  
-  store_str <- store_par <- s_p_ref_list <- s_p_foc_list <-
-    vector(mode = "list", n_i + 1)
-  delta_h_str_par_h.ref.del_i <- delta_h_R_Ef <- 
-    as.data.frame(matrix(nrow = 8, ncol = n_i)) #delta_h_str_par_h.foc.del_i <-
-  
-
+  store_str <- store_par <- s_p_ref_list <- s_p_foc_list <- vector(mode = "list", n_i + 1)
+  delta_h_str_par_h.ref.del_i <- as.data.frame(matrix(nrow = 8, ncol = n_i)) #delta_h_R_Ef <- 
   
   h_R_Ef <- as.data.frame(matrix(nrow = 8, ncol = n_i + 1)) #h_s_p_ref <- h_s_p_foc <- 
   acai_p <- acai_s <- h_acai_s_p <- as.data.frame(matrix(nrow = 4, ncol = n_i + 1))
@@ -249,8 +235,6 @@ item_deletion_h <- function(cfa_fit = NULL,
   out_elements_par <- c("propsel", "cutpt_xi", "cutpt_z", "summary",
                         "bivar_data", "ai_ratio", "labels", "functioncall")
   out_elements_str <- c(paste0(out_elements_par[1:6], "_mi"), out_elements_par[7:8])
-
-  #####
   
   # Call PartInv with the full item set under partial and strict invariance ###
   store_par[[1]] <- 
@@ -264,8 +248,7 @@ item_deletion_h <- function(cfa_fit = NULL,
   class(store_str[[1]]) <- "PartInv"
 
   # h: strict vs. partial invariance (full item set) for all groups
-  # list_str_par_h.full: list of num_g dataframes with columns `strict`,
-  # `partial`, `h`
+  # list_str_par_h.full: list of num_g dfs with columns `strict`, `partial`, `h`
   list_str_par_h.full <- str_par_h(store_str[[1]]$summary_mi,
                                    store_par[[1]]$summary, num_g = num_g)
   # s_p_ref_list is a list of length n_i dataframes, for the reference group. 
@@ -346,12 +329,6 @@ item_deletion_h <- function(cfa_fit = NULL,
       delta_h_str_par_h.foc.del_i[[k]][,return_items_labels[i - 1]] <- 
         delta_h(focal_h.full[[k]], focal_h.del_i[[k]])
     } 
-          
-   # delta_h_str_par_h.foc.del_i[[i - 1]] <- 
-   #   lapply(s_p_foc_list[[i]], FUN = function(x) as.data.frame(x)$h)#lapply(y, FUN = delta_h(as.data.frame(s_p_foc_list[[1]])$h, x)))#lapply(x, FUN = delta_h(s_p_foc_list[[1]], x)))
-    ### names(delta_h_str_par_h.foc.del_i[[i-1]]) <- paste0("delta_", names(delta_h_str_par_h.foc.del_i[[i-1]]))
-    # now each list item is the delta_h for a focal group if item i is deleted>?
-    # need to double check
     
     # h: difference in CAI under partial invariance for the ref group vs. for 
     # the expected CAI for the focal group with the full item set
@@ -385,22 +362,23 @@ item_deletion_h <- function(cfa_fit = NULL,
                  "delta_h_str_par_h.ref.del_i" = delta_h_str_par_h.ref.del_i,
                  ###"delta_h_str_par_h.foc.del_i" = delta_h_str_par_h.foc.del_i,
                  "store_str" = store_str, "store_par" = store_par,
-                 "s_p_ref_list" = s_p_ref_list, "s_p_foc_list" = s_p_foc_list#, 
+                 "s_p_ref_list" = s_p_ref_list, "s_p_foc_list" = s_p_foc_list, 
                  ###"acai_p" = acai_p, "h_acai_s_p" = h_acai_s_p, 
-                ### "h_acai_p" = h_acai_p, "delta_h_s_p_acai" = delta_h_s_p_acai, 
-               ###  "delta_h_R_Ef" = delta_h_R_Ef, 
-               #  "return_items" = return_items
+                 ### "h_acai_p" = h_acai_p, "delta_h_s_p_acai" = delta_h_s_p_acai, 
+                 ###  "delta_h_R_Ef" = delta_h_R_Ef, 
+                 ###  "return_items" = return_items
+               functioncall = functioncall
                )
    ###vlist <- format_item_del(n_i, l = vars)
 
   # Declare classes
- ###  class(vlist$store_par) <- class(vlist$store_str) <-  c("PartInvList", "PartInv")
- ###  class(vlist$h_s_p_list_ref) <- class(vlist$h_s_p_list_foc) <-  
- ###    c("PartInvList", "PartInv", "PartInvGroups")
+  ###  class(vlist$store_par) <- class(vlist$store_str) <-  c("PartInvList", "PartInv")
+  ###  class(vlist$h_s_p_list_ref) <- class(vlist$h_s_p_list_foc) <-  
+  ###    c("PartInvList", "PartInv", "PartInvGroups")
  
   #  vlist <- list("delta_h_str_par_h.ref.del_i" = delta_h_str_par_h.ref.del_i, 
   #                "delta_h_str_par_h.foc.del_i" = delta_h_str_par_h.foc.del_i)#TEMP
-  returned <- list(
+  out <- list(
     # "ACAI" = vlist$acai_p,
     # "h ACAI (deletion)" = vlist$h_acai_p,
     # "h ACAI SFI-PFI" = vlist$h_acai_s_p,
@@ -414,11 +392,11 @@ item_deletion_h <- function(cfa_fit = NULL,
     # "h SFI-PFI by groups" = list("reference" = vlist$h_s_p_list_ref, 
     #                              "focal" = vlist$h_s_p_list_foc),
     # "PartInv" = list("strict" = vlist$store_str, "partial" = vlist$store_par),
-   # "return_items" = return_items
+    # "return_items" = return_items
     )
-  ###class(returned) <- "itemdeletion"
+  ###class(out) <- "itemdeletion"
 
-  return(returned)
+  return(out)
 }
 #"h_s_p_ref" = h_s_p_ref, #"h_s_p_foc" = h_s_p_foc, 
 #delta_h(h_s_p_ref[1], h_s_p_ref[i])

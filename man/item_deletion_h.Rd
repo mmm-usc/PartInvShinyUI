@@ -18,22 +18,17 @@ item_deletion_h(
   pmix = NULL,
   pmix_ref = 0.5,
   plot_contour = TRUE,
-  show_mi_result = TRUE,
   labels = c("Reference", "Focal"),
   n_dim = 1,
   n_i_per_dim = NULL,
-  user_specified_items = NULL,
+  delete_items = NULL,
   delete_one_cutoff = NULL,
   alpha_r = NULL,
   alpha_f = alpha_r,
-  phi_r = NULL,
-  phi_f = phi_r,
   psi_r = NULL,
   psi_f = psi_r,
   lambda_r = NULL,
   lambda_f = lambda_r,
-  tau_r = NULL,
-  tau_f = tau_r,
   nu_r = NULL,
   nu_f = nu_r,
   Theta_r = NULL,
@@ -84,11 +79,6 @@ have equal size).}
 \item{plot_contour}{Logical; whether the contour of the two populations
 should be plotted; default to \code{TRUE}.}
 
-\item{show_mi_result}{If \code{TRUE}, perform classification accuracy analysis
-for both the input parameters and the implied parameters based on a
-strict invariance model, with common parameter values as weighted
-averages of the input values using \code{pmix_ref}.}
-
 \item{labels}{A character vector with two elements to label the reference
 and the focal group on the graph.}
 
@@ -101,7 +91,7 @@ dimension; \code{NULL} by default. If the user provides a value for \code{n_dim}
 that is \eqn{> 1} but leaves \code{n_i_per_dim = NULL}, assumes that
 the subscales have an equal number of items.}
 
-\item{user_specified_items}{A vector; default to \code{NULL}. If the user does not
+\item{delete_items}{A vector; default to \code{NULL}. If the user does not
 input a vector of items, only the items determined to contain bias will
 be considered for deletion.}
 
@@ -110,7 +100,7 @@ delete-one scenarios. \code{NULL} by default; if \code{NULL}, proportion
 selected under SFI and PFI when the full item set is used is passed
 onto calls to PartInv.}
 
-\item{alpha_r, alpha_f, nu_r, nu_f, Theta_r, Theta_f, psi_r, psi_f, lambda_r, lambda_f, phi_r, phi_f, tau_r, tau_f, pmix_ref}{Deprecated; included only for backward compatibility. When comparing two
+\item{alpha_r, alpha_f, nu_r, nu_f, Theta_r, Theta_f, psi_r, psi_f, lambda_r, lambda_f, pmix_ref}{Deprecated; included only for backward compatibility. When comparing two
 groups, parameters with the '_r' suffix refer to the reference group while
 parameters with the '_f' suffix refer to the focal group.}
 

@@ -2,9 +2,9 @@
 # compatibility with different input names, check dimension and object 
 # types, and prepare/format the variables. 
 prep_params <- function(cfa_fit, propsel, cut_z, weights_item, weights_latent,
-     alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour, show_mi_result,
-     labels, n_dim, n_i_per_dim, user_specified_items, delete_one_cutoff, 
-     alpha_r, alpha_f, phi_r, psi_r, psi_f, lambda_r, lambda_f, tau_r, tau_f, 
+     alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour,
+     labels, n_dim, n_i_per_dim, delete_items, delete_one_cutoff, 
+     alpha_r, alpha_f, phi_r, phi_f, psi_r, psi_f, lambda_r, lambda_f, tau_r, tau_f, 
      nu_r, nu_f, Theta_r, Theta_f, func_called) {
   
   if (is.null(cfa_fit)) {

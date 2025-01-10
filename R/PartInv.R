@@ -136,21 +136,21 @@ NULL
 #' nu_matrix <- nu_matrix1 <- nu_matrix2 <- nu_matrix3 <-
 #'   matrix(0, nrow = 15, ncol = 1)
 #' nu_matrix[1:15, 1] <- c(3.6, 3.1, 2.7, 2.9, 2.5, 2.1, 3.45, 2.62, 3.2, 2.84,
-#'                         3.51, 3.26, 2.45, 3.39, 2.47);
+#'                         3.51, 3.26, 2.45, 3.39, 2.47)
 #' nu_matrix1[1:15, 1] <- c(3.9, 3.1, 2.7, 2.9, 2.5, 2.1, 3.45, 2.62, 3.2, 2.84,
-#'                          3.51, 3.26, 2.45, 3.76, 2.81);
+#'                          3.51, 3.26, 2.45, 3.76, 2.81)
 #' nu_matrix2[1:15, 1] <- c(3.6, 3.1, 2.7, 2.9, 2.5, 2.1, 3.45, 2.62, 3.6, 3.18,
-#'                          3.51, 3.54, 2.45, 3.39, 2.81);
+#'                          3.51, 3.54, 2.45, 3.39, 2.81)
 #' nu_matrix3[1:15, 1] <- c(3.6, 3.1, 2.7, 2.6, 2.5, 2.1, 3.45, 2.62, 3.2, 2.84,
-#'                          3.51, 3.26, 2.45, 3.39, 2.81);
+#'                          3.51, 3.26, 2.45, 3.39, 2.81)
 #' theta_matrix <- c(0.35, 0.62, 0.83, 0.61, 0.81, 0.87, 0.39, 1.05, 0.84, 0.92,
-#'                   0.36, 0.66, 0.8, 0.66, 0.9);
+#'                   0.36, 0.66, 0.8, 0.66, 0.9)
 #' theta_matrix1 <- c(0.61, 0.62, 0.83, 0.61, 0.81, 0.5, 0.7, 1.05, 0.84, 0.92,
-#'                    0.61, 0.66, 0.8, 0.54, 0.9);
+#'                    0.61, 0.66, 0.8, 0.54, 0.9)
 #' theta_matrix2 <- c(0.61, 0.62, 0.826, 0.61, 0.81, 0.87, 0.5, 1.05, 0.84,
-#'                    0.92, 0.61, 0.66, 0.8, 0.66, 0.9);
+#'                    0.92, 0.61, 0.66, 0.8, 0.66, 0.9)
 #' theta_matrix3 <- c(0.61, 0.62, 0.826, 0.61, 0.81, 0.5, 0.7, 1.05, 0.84, 0.92,
-#'                    0.61, 0.66, 0.8, 0.66, 0.9);
+#'                    0.61, 0.66, 0.8, 0.66, 0.9)
 #' PartInv(propsel = 0.25, pmix = c(1/4, 1/4, 1/4, 1/4),
 #'         alpha = list(0, -0.70, -1.05, -1.10), psi = list(1, 1.2, 1.29, 1.3),
 #'         nu = list(nu_matrix, nu_matrix1, nu_matrix2, nu_matrix3),
@@ -177,14 +177,13 @@ PartInv <- function(cfa_fit = NULL,
 
   functioncall <- match.call()
   # for backward compatibility with different input names ####
-  source("R/prep_params.R")
+  source(here::here("R/prep_params.R"))
   # pl: parameter list after adjustments
   pl <- prep_params(cfa_fit, propsel, cut_z, weights_item, weights_latent,
                     alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour,
-                    show_mi_result, labels, n_dim, n_i_per_dim,
-                    user_specified_items, delete_one_cutoff, alpha_r, alpha_f,
-                    phi_r, psi_r, psi_f, lambda_r, lambda_f, tau_r, tau_f, nu_r,
-                    nu_f, Theta_r, Theta_f, func_called = "item_deletion_h")
+                    labels, n_dim = NULL, n_i_per_dim = NULL, delete_items = NULL, delete_one_cutoff = NULL, alpha_r, alpha_f,
+                    phi_r, phi_f, psi_r, psi_f, lambda_r, lambda_f, tau_r, tau_f, nu_r,
+                    nu_f, Theta_r, Theta_f)
   alpha <- pl$alpha
   psi <- pl$psi
   lambda <- pl$lambda
@@ -239,8 +238,8 @@ PartInv <- function(cfa_fit = NULL,
     names(out_mi) <- paste0(names(out_mi), "_mi")
     
     # calculate AI ratio for strict invariance (should be 1)   
-    ai_ratio_mi <- as.data.frame(out_mi$summary[5, (num_g + 1):(num_g + num_g - 1)] /
-                                   out_mi$summary[5, 1])
+    ai_ratio_mi <- as.data.frame(
+      out_mi$summary[5, (num_g + 1):(num_g + num_g - 1)] / out_mi$summary[5, 1])
     names(ai_ratio_mi) <- labels[-1]
     row.names(ai_ratio_mi) <- c("")
     
