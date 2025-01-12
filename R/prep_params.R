@@ -1,11 +1,63 @@
-# This function is called in item_deletion_h.R and PartInv.R to ensure backward
-# compatibility with different input names, check dimension and object 
-# types, and prepare/format the variables. 
+
+
+#' Called in item_deletion_h.R and PartInv.R to ensure backward
+#' compatibility with different input names, check dimension and object 
+#' types, and prepare/format the variables. 
+#'
+#' \code{prep_params} 
+#' @param cfa_fit CFA model output from lavaan.
+#' @param propsel Proportion of selection. If missing, computed using `cut_z`.
+#' @param cut_z Pre-specified cutoff score on the observed composite. This
+#'     argument is ignored when `propsel` has input.
+#' @param weights_item A vector of item weights.
+#' @param weights_latent A vector of latent factor weights.
+#' @param alpha A list of length `g` containing `1 x d` latent factor mean
+#'     vectors where `g` is the number of groups and `d` is the number of latent
+#'     dimensions. The first element is assumed to belong to the reference group.
+#' @param psi A list of length `g` containing `d x d` latent factor
+#'     variance-covariance matrices where `g` is the number of groups and `d` is
+#'     the number of latent dimensions. The first element is assumed to belong
+#'     to the reference group.
+#' @param lambda A list of length `g` containing `n x d` factor loading matrices
+#'     where `g` is the number of groups, `d` is the number of latent dimensions,
+#'     and `n` is the number of items in the scale. The first element is assumed
+#'     to belong to the reference group.
+#' @param nu A list of length `g` containing `1 x n` measurement intercept
+#'     vectors where `g` is the number of groups and `n` is the number of items
+#'     in the scale. The first element is assumed to belong to the reference
+#'     group.
+#' @param theta A list of length `g` containing `1 x n` vectors or `n x n`
+#'     matrices of unique factor variances and covariances, where `g` is the
+#'     number of groups and `n` is the number of items in the scale. The first
+#'     element is assumed to belong to the reference group.
+#' @param pmix List of length `g` containing the mixing proportions of each
+#'     group. If `NULL`, defaults to `1/g` for each group (i.e., the populations
+#'     have equal size).
+#'     #' @param n_dim Number of dimensions, 1 by default. If the user does not supply
+#'        a different value, proceeds with the assumption that the scale is
+#'        unidimensional.
+#' @param n_i_per_dim A vector containing the number of items in each
+#'        dimension; `NULL` by default. If the user provides a value for `n_dim`
+#'        that is \eqn{> 1} but leaves \code{n_i_per_dim = NULL}, assumes that
+#'        the subscales have an equal number of items.
+#' @param delete_items A vector; default to `NULL`. If the user does not
+#'        input a vector of items, only the items determined to contain bias will
+#'        be considered for deletion.
+#' @param delete_one_cutoff (optional) User-specified cutoff to use in
+#'        delete-one scenarios. `NULL` by default; if `NULL`, proportion
+#'        selected under SFI and PFI when the full item set is used is passed
+#'        onto calls to PartInv.
+#' @param alpha_r,alpha_f,nu_r,nu_f,Theta_r,Theta_f,psi_r,psi_f,lambda_r,lambda_f,phi_r,phi_f,tau_r,tau_f,kappa_r,kappa_f,pmix_ref
+#'        Deprecated; included only for backward compatibility. When comparing two
+#'        groups, parameters with the '_r' suffix refer to the reference group while
+#'        parameters with the '_f' suffix refer to the focal group.
+
+#' @export
 prep_params <- function(cfa_fit, propsel, cut_z, weights_item, weights_latent,
      alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour,
      labels, n_dim, n_i_per_dim, delete_items, delete_one_cutoff, 
      alpha_r, alpha_f, phi_r, phi_f, psi_r, psi_f, lambda_r, lambda_f, tau_r, tau_f, 
-     nu_r, nu_f, Theta_r, Theta_f, func_called) {
+     nu_r, nu_f, Theta_r, Theta_f) {
   
   if (is.null(cfa_fit)) {
     if (is.null(nu)) {
