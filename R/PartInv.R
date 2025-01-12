@@ -177,9 +177,9 @@ PartInv <- function(cfa_fit = NULL,
 
   functioncall <- match.call()
   # for backward compatibility with different input names ####
-  source(system.file("R", "prep_params.R", package = "unbiasr"))
+  #source(file.path(find.package("unbiasr"), "R", "prep_params.R"))
   # pl: parameter list after adjustments
-  pl <- unbiasr::prep_params(cfa_fit, propsel, cut_z, weights_item, weights_latent,
+  pl <- unbiasr:::prep_params(cfa_fit, propsel, cut_z, weights_item, weights_latent,
                     alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour,
                     labels, n_dim = NULL, n_i_per_dim = NULL, delete_items = NULL, delete_one_cutoff = NULL, alpha_r, alpha_f,
                     phi_r, phi_f, psi_r, psi_f, lambda_r, lambda_f, tau_r, tau_f, nu_r,

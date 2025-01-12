@@ -51,8 +51,6 @@
 #'        Deprecated; included only for backward compatibility. When comparing two
 #'        groups, parameters with the '_r' suffix refer to the reference group while
 #'        parameters with the '_f' suffix refer to the focal group.
-
-#' @export
 prep_params <- function(cfa_fit, propsel, cut_z, weights_item, weights_latent,
      alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour,
      labels, n_dim, n_i_per_dim, delete_items, delete_one_cutoff, 
