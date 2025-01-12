@@ -162,6 +162,18 @@ NULL
 #'         labels = c("Group 1", "Group 2", "Group 3", "Group 4"),
 #'         custom_colors = c("salmon1", "lightgreen", "skyblue1", "pink")
 #'         )
+#' set.seed(7)  
+#' sim_m <-
+#'   "f =~ c(1, .7, 1) * x1 + c(.8, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5
+#'    f ~~ c(1, 1.3, 1.5) * f
+#'    f ~  c(0, .5, 1) * 1
+#'    x1 ~ c(0, .3, 0) * 1
+#'    x3 ~ c(.3, 0, -.3) * 1
+#'    x1 ~~ c(1, .5, 1) * x1"
+#' dat_sim <- simulateData(sim_m, sample.nobs = c(80, 100, 110))
+#' fit_sim <- lavaan::cfa(model = sim_m, data = dat_sim, group = "group")
+#' PartInv(cfa_fit = fit_sim, propsel = .05)
+
 #' @export
 PartInv <- function(cfa_fit = NULL,
                     propsel = NULL, cut_z = NULL,
@@ -199,7 +211,12 @@ PartInv <- function(cfa_fit = NULL,
   # If labels were not provided by the user or the number of labels provided or
   # the number of labels provided does not match num_g, define new labels
   if (is.null(labels) || (length(labels) != num_g)) {
+    if (!is.null(cfa_fit) && 
+        !all(summary(cfa_fit)$data$group.label == as.character(seq(num_g)))) {
+      labels <- summary(cfa_fit)$data$group.label
+    } else {
     labels <- c("Reference", paste0("Focal_", 1:(num_g - 1)))
+    }
   }
 
   out <- compute_cai(weights_item, weights_latent, alpha, psi, lambda, nu,
