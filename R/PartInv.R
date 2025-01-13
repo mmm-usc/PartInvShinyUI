@@ -210,17 +210,7 @@ PartInv <- function(cfa_fit = NULL,
   d <- pl$d
   weights_latent <- pl$weights_latent
   weights_item <- pl$weights_item
-
-  # If labels were not provided by the user or the number of labels provided or
-  # the number of labels provided does not match num_g, define new labels
-  if (is.null(labels) || (length(labels) != num_g)) {
-    if (!is.null(cfa_fit) && 
-        !all(summary(cfa_fit)$data$group.label == as.character(seq(num_g)))) {
-      labels <- summary(cfa_fit)$data$group.label
-    } else {
-    labels <- c("Reference", paste0("Focal_", 1:(num_g - 1)))
-    }
-  }
+  labels <- pl$labels
 
   out <- compute_cai(weights_item, weights_latent, alpha, psi, lambda, nu,
     theta, pmix, propsel, labels, cut_z, num_g = num_g, is_mi = FALSE

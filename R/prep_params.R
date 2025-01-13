@@ -113,37 +113,7 @@ prep_params <- function(cfa_fit, propsel, cut_z, weights_item, weights_latent,
       psi <- c(list(psi[[ind]]), psi[-ind])
     }
   }
-  if (is.null(pmix)) {
-    if (!is.null(pmix_ref)) {
-      pmix <- c(pmix_ref, 1 - pmix_ref) # assuming two groups
-    }
-    if (!is.null(cfa_fit)) {
-      cfa_sum <- summary(cfa_fit)
-      pmix <- cfa_sum$data$nobs / sum(cfa_sum$data$nobs)
-    }
-    if (is.null(cfa_fit) & is.null(pmix_ref)) {
-      pmix <- rep(1, length(alpha)) / length(alpha)
-      warning("Mixing proportions not provided (pmix). Assuming equal weights.")
-    }
-  }
-  stopifnot("Provide the correct number of mixing proportions." = 
-              length(pmix) == length(alpha))
-  if (!is.null(reference)) {
-    stopifnot("Ensure the spelling of the provided reference group is correct or use default reference group."
-              = reference %in% summary(cfa_fit)$data$group.label)
-    ind <- which(summary(cfa_fit)$data$group.label == reference)
-    pmix <- c(pmix[[ind]], pmix[-ind])
-  }
-  
-  # Change any vector elements within the list theta into diagonal matrices
-  theta <- lapply(seq_along(theta), function(x) {
-    if (is.vector(theta[[x]])) {
-      theta[[x]] <- diag(theta[[x]])
-    } else {
-      theta[[x]] <- theta[[x]] # necessary to ensure conformable arguments later
-    }
-  })
-  
+
   num_g <- length(alpha)
   n_i <- length(nu[[1]])
   d <- length(alpha[[1]])
@@ -175,6 +145,60 @@ prep_params <- function(cfa_fit, propsel, cut_z, weights_item, weights_latent,
     stop("Please provide a weights_latent vector of the correct length.")
   }
   
+  if (is.null(pmix)) {
+    if (!is.null(pmix_ref)) {
+      pmix <- c(pmix_ref, 1 - pmix_ref) # assuming two groups
+    }
+    if (!is.null(cfa_fit)) {
+      cfa_sum <- summary(cfa_fit)
+      pmix <- cfa_sum$data$nobs / sum(cfa_sum$data$nobs)
+    }
+    if (is.null(cfa_fit) & is.null(pmix_ref)) {
+      pmix <- rep(1, length(alpha)) / length(alpha)
+      warning("Mixing proportions not provided (pmix). Assuming equal weights.")
+    }
+  }
+  stopifnot("Provide the correct number of mixing proportions." = 
+              length(pmix) == length(alpha))
+  
+  # If labels were not provided by the user or the number of labels provided or
+  # the number of labels provided does not match num_g, define new labels
+  if (is.null(labels) || (length(labels) != num_g)) {
+    if (!is.null(cfa_fit) #&& 
+        #!all(summary(cfa_fit)$data$group.label == as.character(seq(num_g)))
+        ) {
+      labels <- summary(cfa_fit)$data$group.label
+      stopifnot("Ensure the spelling of the provided reference group is correct or use default reference group."
+                = reference %in% summary(cfa_fit)$data$group.label)
+      ind <- which(summary(cfa_fit)$data$group.label == reference)
+      labels <- c(labels[[ind]], labels[-ind])
+    } else {
+      labels <- c("Reference", paste0("Focal_", 1:(num_g - 1)))
+    }
+  }
+  
+  ## write code to handle when cfa_fit, reference, and label are all provided.
+  # currently disregards labels
+  
+  if (!is.null(cfa_fit) &&!is.null(reference)) {
+    stopifnot("Ensure the spelling of the provided reference group is correct or use default reference group."
+              = reference %in% summary(cfa_fit)$data$group.label)
+    ind <- which(summary(cfa_fit)$data$group.label == reference)
+    pmix <- c(pmix[[ind]], pmix[-ind])
+    # print(labels)
+    # print(reference)
+    # labels <- c(labels[[ind]], labels[-ind])
+  }
+  
+  # Change any vector elements within the list theta into diagonal matrices
+  theta <- lapply(seq_along(theta), function(x) {
+    if (is.vector(theta[[x]])) {
+      theta[[x]] <- diag(theta[[x]])
+    } else {
+      theta[[x]] <- theta[[x]] # necessary to ensure conformable arguments later
+    }
+  })
+  
   g <- c("r", paste0("f", 1:(num_g - 1)))
   names(alpha) <- paste("alpha", g, sep = "_")
   names(nu) <- paste("nu", g, sep = "_")
@@ -185,5 +209,5 @@ prep_params <- function(cfa_fit, propsel, cut_z, weights_item, weights_latent,
   return(list("alpha" = alpha, "lambda" = lambda, "nu" = nu, "psi" = psi, 
               "theta" = theta, "pmix" = pmix, "num_g" = num_g, "n_i" = n_i, 
               "d" = d, "weights_item" = weights_item,
-              "weights_latent" = weights_latent))
+              "weights_latent" = weights_latent, "labels" = labels))
 }
