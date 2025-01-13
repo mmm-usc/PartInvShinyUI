@@ -23,6 +23,7 @@ PartInv(
   show_mi_result = FALSE,
   labels = NULL,
   custom_colors = NULL,
+  reference = NULL,
   kappa_r = NULL,
   kappa_f = kappa_r,
   alpha_r = NULL,
@@ -99,6 +100,9 @@ group) and 'Focal_1' through 'Focal_(g-1)', where \code{g} is the number of
 groups.}
 
 \item{custom_colors}{Optional argument for specifying colors}
+
+\item{reference}{Optional argument for specifying the reference group.
+Currently only functional when cfa_fit is provided.}
 
 \item{alpha_r, alpha_f, nu_r, nu_f, Theta_r, Theta_f, psi_r, psi_f, lambda_r, lambda_f, phi_r, phi_f, tau_r, tau_f, kappa_r, kappa_f, pmix_ref}{Deprecated; included only for backward compatibility. When comparing two
 groups, parameters with the '_r' suffix refer to the reference group while
@@ -223,7 +227,7 @@ PartInv(propsel = 0.25, pmix = c(1/4, 1/4, 1/4, 1/4),
         )
 set.seed(7)  
 sim_m <-
-  "f =~ c(1, .7, 1) * x1 + c(.8, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5
+  "f =~ c(1, .7, 1) * x1 + c(.5, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5
    f ~~ c(1, 1.3, 1.5) * f
    f ~  c(0, .5, 1) * 1
    x1 ~ c(0, .3, 0) * 1
@@ -231,5 +235,5 @@ sim_m <-
    x1 ~~ c(1, .5, 1) * x1"
 dat_sim <- simulateData(sim_m, sample.nobs = c(80, 100, 110))
 fit_sim <- lavaan::cfa(model = sim_m, data = dat_sim, group = "group")
-PartInv(cfa_fit = fit_sim, propsel = .05)
+PartInv(cfa_fit = fit_sim, propsel = .05, reference = "2")
 }

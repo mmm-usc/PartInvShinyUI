@@ -55,7 +55,7 @@ prep_params <- function(cfa_fit, propsel, cut_z, weights_item, weights_latent,
      alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour,
      labels, n_dim, n_i_per_dim, delete_items, delete_one_cutoff, 
      alpha_r, alpha_f, phi_r, phi_f, psi_r, psi_f, lambda_r, lambda_f, tau_r, tau_f, 
-     nu_r, nu_f, Theta_r, Theta_f) {
+     nu_r, nu_f, Theta_r, Theta_f, reference) {
   
   if (is.null(cfa_fit)) {
     if (is.null(nu)) {
@@ -95,13 +95,24 @@ prep_params <- function(cfa_fit, propsel, cut_z, weights_item, weights_latent,
     }
     # extract the parameter estimates from the cfa fit object
     lav_cfa <- unnest_list(lavInspect(cfa_fit, "est"))
+    
     alpha <- lapply(lav_cfa$alpha, FUN = c)
     nu <- lapply(lav_cfa$nu, FUN = c)
     theta <- lav_cfa$theta
     lambda <- lav_cfa$lambda
     psi <- lav_cfa$psi
+    
+    if (!is.null(reference)) {
+      stopifnot("Ensure the spelling of the provided reference group is correct or use default reference group."
+           = reference %in% summary(cfa_fit)$data$group.label)
+      ind <- which(summary(cfa_fit)$data$group.label == reference)
+      alpha <- c(list(alpha[[ind]]), alpha[-ind])
+      nu <- c(list(nu[[ind]]), nu[-ind])
+      theta <- c(list(theta[[ind]]), theta[-ind])
+      lambda <- c(list(lambda[[ind]]), lambda[-ind])
+      psi <- c(list(psi[[ind]]), psi[-ind])
+    }
   }
-  
   if (is.null(pmix)) {
     if (!is.null(pmix_ref)) {
       pmix <- c(pmix_ref, 1 - pmix_ref) # assuming two groups
@@ -117,6 +128,12 @@ prep_params <- function(cfa_fit, propsel, cut_z, weights_item, weights_latent,
   }
   stopifnot("Provide the correct number of mixing proportions." = 
               length(pmix) == length(alpha))
+  if (!is.null(reference)) {
+    stopifnot("Ensure the spelling of the provided reference group is correct or use default reference group."
+              = reference %in% summary(cfa_fit)$data$group.label)
+    ind <- which(summary(cfa_fit)$data$group.label == reference)
+    pmix <- c(pmix[[ind]], pmix[-ind])
+  }
   
   # Change any vector elements within the list theta into diagonal matrices
   theta <- lapply(seq_along(theta), function(x) {

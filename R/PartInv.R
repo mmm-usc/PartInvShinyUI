@@ -50,6 +50,8 @@ NULL
 #'     group) and 'Focal_1' through 'Focal_(g-1)', where `g` is the number of
 #'     groups.
 #' @param custom_colors Optional argument for specifying colors
+#' @param reference Optional argument for specifying the reference group.
+#' Currently only functional when cfa_fit is provided.
 #' @param ... Other arguments passed to the \code{\link[graphics]{contour}}
 #'     function.
 #' @param alpha_r,alpha_f,nu_r,nu_f,Theta_r,Theta_f,psi_r,psi_f,lambda_r,lambda_f,phi_r,phi_f,tau_r,tau_f,kappa_r,kappa_f,pmix_ref
@@ -164,7 +166,7 @@ NULL
 #'         )
 #' set.seed(7)  
 #' sim_m <-
-#'   "f =~ c(1, .7, 1) * x1 + c(.8, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5
+#'   "f =~ c(1, .7, 1) * x1 + c(.5, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5
 #'    f ~~ c(1, 1.3, 1.5) * f
 #'    f ~  c(0, .5, 1) * 1
 #'    x1 ~ c(0, .3, 0) * 1
@@ -172,7 +174,7 @@ NULL
 #'    x1 ~~ c(1, .5, 1) * x1"
 #' dat_sim <- simulateData(sim_m, sample.nobs = c(80, 100, 110))
 #' fit_sim <- lavaan::cfa(model = sim_m, data = dat_sim, group = "group")
-#' PartInv(cfa_fit = fit_sim, propsel = .05)
+#' PartInv(cfa_fit = fit_sim, propsel = .05, reference = "2")
 
 #' @export
 PartInv <- function(cfa_fit = NULL,
@@ -184,6 +186,7 @@ PartInv <- function(cfa_fit = NULL,
                     show_mi_result = FALSE,
                     labels = NULL,
                     custom_colors = NULL,
+                    reference = NULL,
                     kappa_r = NULL, kappa_f = kappa_r, alpha_r = NULL, alpha_f = alpha_r, phi_r = NULL, phi_f = phi_r, psi_r = NULL, psi_f = psi_r, lambda_r = NULL, lambda_f = lambda_r, tau_r = NULL, tau_f = tau_r, nu_r = NULL, nu_f = nu_r, Theta_r = NULL, Theta_f = Theta_r,
                     ...) {
 
@@ -195,7 +198,7 @@ PartInv <- function(cfa_fit = NULL,
                     alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour,
                     labels, n_dim = NULL, n_i_per_dim = NULL, delete_items = NULL, delete_one_cutoff = NULL, alpha_r, alpha_f,
                     phi_r, phi_f, psi_r, psi_f, lambda_r, lambda_f, tau_r, tau_f, nu_r,
-                    nu_f, Theta_r, Theta_f)
+                    nu_f, Theta_r, Theta_f, reference)
   alpha <- pl$alpha
   psi <- pl$psi
   lambda <- pl$lambda
