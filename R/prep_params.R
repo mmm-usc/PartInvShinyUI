@@ -168,10 +168,12 @@ prep_params <- function(cfa_fit, propsel, cut_z, weights_item, weights_latent,
         #!all(summary(cfa_fit)$data$group.label == as.character(seq(num_g)))
         ) {
       labels <- summary(cfa_fit)$data$group.label
-      stopifnot("Ensure the spelling of the provided reference group is correct or use default reference group."
-                = reference %in% summary(cfa_fit)$data$group.label)
-      ind <- which(summary(cfa_fit)$data$group.label == reference)
-      labels <- c(labels[[ind]], labels[-ind])
+      if(!is.null(reference)) {
+        stopifnot("Ensure the spelling of the provided reference group is correct or use default reference group."
+                  = reference %in% summary(cfa_fit)$data$group.label)
+        ind <- which(summary(cfa_fit)$data$group.label == reference)
+        labels <- c(labels[[ind]], labels[-ind])
+      }
     } else {
       labels <- c("Reference", paste0("Focal_", 1:(num_g - 1)))
     }
