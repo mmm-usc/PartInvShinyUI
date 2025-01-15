@@ -74,7 +74,6 @@ plotPropselRange <- function(cfa_fit,
                              custom_colors = NULL, 
                              reference = NULL, ...
                              ) {
-  
   stopifnot("cai_names can only take the following values: PS, SR, SE, SP, AI." =
               (all(cai_names %in% c("PS", "SR", "SE", "SP", "AI"))))
   stopifnot("mod_names can only take the following values: par, str" =
@@ -90,7 +89,6 @@ plotPropselRange <- function(cfa_fit,
   }
   
   est <- format_cfa_partinv(cfa_fit, comp = "est")
-  
   propsels <- seq(from = from, to = to, by = by)
   use <- "propsels"
   xl <- "Proportion of selection"
@@ -112,17 +110,9 @@ plotPropselRange <- function(cfa_fit,
     use <- "cutoffs"
   }
   n_g <- cfa_fit@Data@ngroups # number of groups
-  
-  # if the user did not provide labels, or provided the wrong number of labels,
-  if (is.null(labels) || (length(labels) != n_g)) {
-    labels <- cfa_fit@Data@group.label
-    labels2 <- paste(labels, c("(reference)", rep("(focal)", n_g - 1)))
-  }
-  
-  ls_mat <- matrix(NA, ncol = length(rangeVals), nrow = n_g,
-                   dimnames = list(labels, rangeVals))
-  AIs <- matrix(NA, ncol = length(rangeVals), nrow = n_g - 1,
-                dimnames = list(labels[-1], rangeVals))
+
+  ls_mat <- matrix(NA, ncol = length(rangeVals), nrow = n_g)
+  AIs <- matrix(NA, ncol = length(rangeVals), nrow = n_g - 1)
   ls_names <- c(t(outer(cai_names, Y = mod_names, FUN = paste, sep = "_")))
   ls <- rep(list(ls_mat), length(ls_names))
   names(ls) <- ls_names
@@ -134,8 +124,7 @@ plotPropselRange <- function(cfa_fit,
   ylabs <- ""
   mains <- ""
   
-  # call PartInv with each proportion of selection and store CAI in the list of
-  # data frames
+  # call PartInv with each propsel/cutoff and store CAI in the list of dfs
   for (p in seq_along(rangeVals)) {
     # if the user provided cutoff values
     if (use == "cutoffs") {
@@ -169,8 +158,10 @@ plotPropselRange <- function(cfa_fit,
                         reference = reference)
       })
     }  
-    num_comb <- length(cai_names) * length(mod_names) + 1 # for specifying the
-    # index within ls
+    # for specifying the index within ls
+    num_comb <- length(cai_names) * length(mod_names) + 1 
+    
+
     ind <- 1
 
     while (ind < num_comb) {
@@ -199,6 +190,18 @@ plotPropselRange <- function(cfa_fit,
     }
     AIs[,p] <- as.numeric(pinv$ai_ratio)
   }
+  
+  # extract labels
+  labels <- pinv$labels
+  labels2 <- paste(labels, c("(reference)", rep("(focal)", n_g - 1)))
+
+  rownames(AIs) <- labels[-1]
+  colnames(AIs) <- rangeVals
+ 
+  ls <- lapply(ls, function(mat) {
+    dimnames(mat) <- list(labels, rangeVals)
+    mat
+  })
   
   mains <- mains[-1]
   ylabs <- ylabs[-1]
