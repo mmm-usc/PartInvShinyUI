@@ -30,25 +30,32 @@ NULL
 #'     (SR), sensitivity (SE), and specificity (SP) change across different 
 #'     proportions of selection under partial and strict invariance conditions.
 #' @param custom_colors Optional argument for specifying colors.
+#' @param reference Optional argument for specifying the reference group.
 #' @param ... Additional arguments.
 #' @examples
 #' \dontrun{
+#' set.seed(7)  
+#' cols <- c("salmon1", "lightgreen", "skyblue1", "pink")
+#' sim_m <-
+#'   "f =~ c(1, .7, 1) * x1 + c(.8, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5
+#'    f ~~ c(1, 1.3, 1.5) * f
+#'    f ~  c(0, .5, 1) * 1
+#'    x1 ~ c(0, .3, 0) * 1
+#'    x3 ~ c(.3, 0, -.3) * 1
+#'    x1 ~~ c(1, .5, 1) * x1"
+#' dat_sim <- simulateData(sim_m, sample.nobs = c(80, 100, 110))
+#' fit_sim <- lavaan::cfa(model = sim_m, data = dat_sim, group = "group")
+#' plotPropselRange(cfa_fit = fit_sim)
+#
 #' library(lavaan)
 #' HS <- HolzingerSwineford1939
 #' HS$sex <- as.factor(HS$sex)
 #' HS.model <- ' visual  =~ x1 + x2 + x3
 #'               textual =~ x4 + x5 + x6
 #'               speed   =~ x7 + x8 + x9 '
-#' 
 #' fit <- cfa(HS.model, data = HS, group = "sex")
-#' 
-#' # plot CAI at different proportions of selection
-#' plotPropselRange(fit, pmix = table(HS$sex)/sum(table(HS$sex)))
-#' 
-#' # plot CAI at different cutoffs
-#' plotPropselRange(fit, pmix = table(HS$sex)/sum(table(HS$sex)), 
-#'    cutoffs_from = 35, cutoffs_to = 50)
-#'
+#' plotPropselRange(fit, pmix = table(HS$sex) / sum(table(HS$sex)), 
+#'                  cutoffs_from = 35, cutoffs_to = 50)
 #' # plot only SR under partial invariance for up to 10% selection.
 #' plotPropselRange(fit, pmix = table(HS$sex)/sum(table(HS$sex)), 
 #'     from = 0.01, to = 0.10, cai_names = "SR", mod_names = "par")
@@ -64,7 +71,8 @@ plotPropselRange <- function(cfa_fit,
                              by = 0.01,
                              cutoffs_from = NULL,
                              cutoffs_to = NULL, 
-                             custom_colors = NULL, ...
+                             custom_colors = NULL, 
+                             reference = NULL, ...
                              ) {
   
   stopifnot("cai_names can only take the following values: PS, SR, SE, SP, AI." =
@@ -73,7 +81,6 @@ plotPropselRange <- function(cfa_fit,
               (all(mod_names %in% c("par", "str"))))
   plotAIs <- TRUE
   if ("AI" %in% cai_names) {
-    
     cai_names <- cai_names[!cai_names %in% "AI"]
     if (length(cai_names) == 0) {
       cai_names <- NULL
@@ -109,7 +116,7 @@ plotPropselRange <- function(cfa_fit,
   # if the user did not provide labels, or provided the wrong number of labels,
   if (is.null(labels) || (length(labels) != n_g)) {
     labels <- cfa_fit@Data@group.label
-    labels <- paste(labels, c("(reference)", rep("(focal)", n_g - 1)))
+    labels2 <- paste(labels, c("(reference)", rep("(focal)", n_g - 1)))
   }
   
   ls_mat <- matrix(NA, ncol = length(rangeVals), nrow = n_g,
@@ -142,7 +149,8 @@ plotPropselRange <- function(cfa_fit,
                         pmix = pmix,
                         plot_contour = FALSE,
                         labels = labels,
-                        show_mi_result = TRUE)
+                        show_mi_result = TRUE, 
+                        reference = reference)
       })
     }
     # if the user did not provide cutoff values
@@ -157,7 +165,8 @@ plotPropselRange <- function(cfa_fit,
                         pmix = pmix,
                         plot_contour = FALSE,
                         labels = labels,
-                        show_mi_result = TRUE)
+                        show_mi_result = TRUE,
+                        reference = reference)
       })
     }  
     num_comb <- length(cai_names) * length(mod_names) + 1 # for specifying the
@@ -177,7 +186,6 @@ plotPropselRange <- function(cfa_fit,
               as.numeric(pinv$summary[cai, 1:n_g]),
               as.numeric(pinv$summary_mi[cai, 1:n_g])
             )
-
           ylabs <- c(ylabs, paste0(cai, " (", cai_names[i], ")"))
 
           temp <- ""
@@ -216,7 +224,7 @@ plotPropselRange <- function(cfa_fit,
         lines(rangeVals, ls[[ls_names[l]]][i + 1, ], type = "l",
               lwd = 1.5, col = colorlist[i + 1])
       }
-      legend(legends[l], legend = labels, col = colorlist[1:n_g], lty = 1,
+      legend(legends[l], legend = labels2, col = colorlist[1:n_g], lty = 1,
              lwd = 1.5, cex = 0.8)  
     }
   }
@@ -233,7 +241,7 @@ plotPropselRange <- function(cfa_fit,
               lwd = 1.5, col = colorlist[i])
       }
     }
-    legend("bottomright", legend = labels[-1], col = colorlist[1:n_g], lty = 1,
+    legend("bottomright", legend = labels2[-1], col = colorlist[1:n_g], lty = 1,
            lwd = 1.5, cex = 0.8)  
   }
 }
