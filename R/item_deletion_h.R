@@ -169,7 +169,7 @@ item_deletion_h <- function(cfa_fit = NULL,
                             pmix = NULL,
                             pmix_ref = 0.5,
                             plot_contour = TRUE,
-                            labels = c("Reference", "Focal"),
+                            labels = NULL,#c("Reference", "Focal"),
                             n_dim = 1,
                             n_i_per_dim = NULL,
                             delete_items = NULL,
@@ -183,14 +183,14 @@ item_deletion_h <- function(cfa_fit = NULL,
   functioncall <- match.call()
   
   # for backward compatibility with different input names ####
-  source("R/prep_params.R")
   # pl: parameter list after adjustments
-  pl <- prep_params(cfa_fit, propsel, cut_z, weights_item, weights_latent, 
-                    alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour,
-                    labels, n_dim, n_i_per_dim, delete_items, delete_one_cutoff, 
-                    alpha_r, alpha_f, phi_r = NULL, phi_f = NULL, 
-                    psi_r, psi_f, lambda_r, lambda_f, tau_r = NULL, tau_f = NULL, 
-                    nu_r, nu_f, Theta_r, Theta_f)
+  pl <- unbiasr:::prep_params(cfa_fit, propsel, cut_z, weights_item, weights_latent,
+                              alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour,
+                              labels, n_dim = n_dim, n_i_per_dim = n_i_per_dim,
+                              delete_items = delete_items, 
+                              delete_one_cutoff = delete_one_cutoff, alpha_r, alpha_f,
+                              phi_r = NULL, phi_f = NULL, psi_r, psi_f, lambda_r, lambda_f, tau_r = NULL, tau_f = NULL, 
+                              kappa_r = NULL, kappa_f = NULL, nu_r, nu_f, Theta_r, Theta_f, reference = NULL, custom_colors)
   alpha <- pl$alpha
   psi <- pl$psi
   lambda <- pl$lambda

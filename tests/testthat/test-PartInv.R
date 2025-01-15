@@ -37,7 +37,6 @@ test_that("plot.PartInv() works successfully", {
   piout_with_mi <- PartInv(
     propsel = .10,
     kappa_r = 0.5,
-    kappa_f = 0,
     phi_r = 1,
     lambda_r = c(.3, .5, .9, .7, .8),
     tau_r = c(.225, .025, .010, .240, .123),
@@ -53,10 +52,22 @@ test_that("plot.PartInv() works successfully", {
 })
 
 test_that("Identical selection with the same parameters", {
-  expect_equal(piout_eq$summary[ , 1],
-               piout_eq$summary[ , 2])
+  expect_equal(piout_eq$summary[, 1],
+               piout_eq$summary[, 2])
   expect_equal(piout_eq$summary["Proportion selected", 1], .10)
 })
+
+# if alpha or alpha_r or kappa_r or cfa_fit not provided
+expect_error(PartInv(
+  propsel = .10,
+  phi_r = 1,
+  lambda_r = c(.3, .5, .9, .7, .8),
+  tau_r = c(.225, .025, .010, .240, .123),
+  Theta_r = diag(.96, 5),
+  labels = c("female", "male"),
+  show_mi_result = TRUE
+)
+)
 
 test_that("Duplicated results with `show_mi_result = TRUE` when inputting invariant model", {
   piout_eq2 <- PartInv(
@@ -222,3 +233,4 @@ test_that("`show_mi_result = TRUE` uses same cut_z if specified", {
   )
   expect_equal(piout1_pstrict$summary_mi, piout1_strict$summary[, 1:2])
 })
+

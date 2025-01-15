@@ -157,83 +157,64 @@ using the multidimensional classification accuracy analysis
 approach.
 }
 \examples{
-# Two groups, using cfa fit object
+set.seed(7)  
+cols <- c("salmon1", "lightgreen", "skyblue1", "pink")
+sim_m <-
+  "f =~ c(1, .7, 1) * x1 + c(.2, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5
+   f ~~ c(1, 1.3, 1.5) * f
+   f ~  c(0, .5, 1) * 1
+   x1 ~ c(0, .3, 0) * 1
+   x3 ~ c(.3, 0, -.3) * 1
+   x1 ~~ c(1, .5, 1) * x1"
+dat_sim <- lavaan::simulateData(sim_m, sample.nobs = c(80, 100, 110))
+fit_sim <- lavaan::cfa(model = sim_m, data = dat_sim, group = "group")
+PartInv(cfa_fit = fit_sim, propsel = .05, plot_contour = TRUE, 
+        custom_colors = cols[1:3], show_mi_result = TRUE)
+
 library(lavaan)
 HS <- HolzingerSwineford1939
 HS$sex <- as.factor(HS$sex)
 HS.model <- ' visual  =~ x1 + x2 + x3
               textual =~ x4 + x5 + x6
               speed   =~ x7 + x8 + x9 '
-
 fit <- cfa(HS.model, data = HS, group = "sex")
-PartInv(fit, propsel = .7, plot_contour = TRUE, show_mi_result = TRUE)
+PartInv(fit, propsel = .7, plot_contour = TRUE, show_mi_result = TRUE,
+        labels = c("M", "F"))
 # Two groups, single dimension
-PartInv(cfa_fit = NULL, propsel = .30,
-        weights_item = c(1, 1, 1, 1),
-        weights_latent = 1,
-        alpha = list(0, 0),
-        psi = list(1, 1),
-        lambda = list(c(1, 1, 1, 1), c(1, 1, 1, 1)),
-        nu = list(c(1, 1, 1, 2), c(1, 1, 1, 1)),
-        theta = list(diag(1, 4), diag(1, 4)),
-        labels = c("Female", "Male"),
-        show_mi_result = TRUE)
+PartInv(cfa_fit = NULL, propsel = .30, weights_item = rep(1, 4),
+        alpha = list(0, 0), psi = list(1, 1), 
+        lambda = list(rep(1, 4), c(1, 1, .7, .4)),
+        nu = list(rep(1, 4), rep(1, 4)), theta = list(diag(1, 4), diag(1, 4)),
+        labels = c("Female", "Male"), show_mi_result = TRUE, 
+        plot_contour = TRUE)
 # Two groups, two dimensions
-lambda_matrix <- matrix(0, nrow = 5, ncol = 2)
-lambda_matrix[1:2, 1] <- c(.322, .655)
-lambda_matrix[3:5, 2] <- c(.398, .745, .543)
-PartInv(propsel = .05,
-        weights_latent = c(0.5, 0.5),
-        alpha = list(c(0, 0), c(-0.3, 0.1)),
-        psi = list(matrix(c(1, 0.5, 0.5, 1), nrow = 2),
-                   matrix(c(1, 0.5, 0.5, 1), nrow = 2)),
-        lambda = list(lambda_matrix, lambda_matrix),
-        nu = list(c(.225, .25, .010, .30, .125),
-                  c(.225, -.05, .240, -.025, .125)),
-        theta = list(diag(1, 5), c(1, .95, .80, .75, 1)),
+l_mat <- matrix(0, nrow = 5, ncol = 2)
+l_mat[1:2, 1] <- c(.3, .7); l_mat[3:5, 2] <- c(.4, .8, .5)
+PartInv(propsel = .05, weights_latent = c(.5, .5),
+        alpha = list(c(0, 0), c(-.3, .1)),
+        psi = list(matrix(c(1, .5, .5, 1), nrow = 2),
+                   matrix(c(1, .5, .5, 1), nrow = 2)),
+        lambda = list(l_mat, l_mat),
+        nu = list(c(.3, .3, .01, .3, .1), c(.3, -.05, .3, -.03, .1)),
+        theta = list(diag(1, 5), c(1, .9, .8, .8, 1)),
         plot_contour = TRUE, show_mi_result = TRUE)
 # Multiple groups, multiple dimensions
-lambda_matrix <- matrix(0, nrow = 15, ncol = 1)
-lambda_matrix[1:15, 1] <- c(0.68, 0.79, -0.39, 0.74, 0.59, 0.46, 0.78, -0.30,
-                            0.59, 0.59, 0.64, 0.66, 0.59, 0.63, 0.64);
-nu_matrix <- nu_matrix1 <- nu_matrix2 <- nu_matrix3 <-
-  matrix(0, nrow = 15, ncol = 1)
-nu_matrix[1:15, 1] <- c(3.6, 3.1, 2.7, 2.9, 2.5, 2.1, 3.45, 2.62, 3.2, 2.84,
-                        3.51, 3.26, 2.45, 3.39, 2.47)
-nu_matrix1[1:15, 1] <- c(3.9, 3.1, 2.7, 2.9, 2.5, 2.1, 3.45, 2.62, 3.2, 2.84,
-                         3.51, 3.26, 2.45, 3.76, 2.81)
-nu_matrix2[1:15, 1] <- c(3.6, 3.1, 2.7, 2.9, 2.5, 2.1, 3.45, 2.62, 3.6, 3.18,
-                         3.51, 3.54, 2.45, 3.39, 2.81)
-nu_matrix3[1:15, 1] <- c(3.6, 3.1, 2.7, 2.6, 2.5, 2.1, 3.45, 2.62, 3.2, 2.84,
-                         3.51, 3.26, 2.45, 3.39, 2.81)
-theta_matrix <- c(0.35, 0.62, 0.83, 0.61, 0.81, 0.87, 0.39, 1.05, 0.84, 0.92,
-                  0.36, 0.66, 0.8, 0.66, 0.9)
-theta_matrix1 <- c(0.61, 0.62, 0.83, 0.61, 0.81, 0.5, 0.7, 1.05, 0.84, 0.92,
-                   0.61, 0.66, 0.8, 0.54, 0.9)
-theta_matrix2 <- c(0.61, 0.62, 0.826, 0.61, 0.81, 0.87, 0.5, 1.05, 0.84,
-                   0.92, 0.61, 0.66, 0.8, 0.66, 0.9)
-theta_matrix3 <- c(0.61, 0.62, 0.826, 0.61, 0.81, 0.5, 0.7, 1.05, 0.84, 0.92,
-                   0.61, 0.66, 0.8, 0.66, 0.9)
-PartInv(propsel = 0.25, pmix = c(1/4, 1/4, 1/4, 1/4),
-        alpha = list(0, -0.70, -1.05, -1.10), psi = list(1, 1.2, 1.29, 1.3),
-        nu = list(nu_matrix, nu_matrix1, nu_matrix2, nu_matrix3),
-        lambda = list(lambda_matrix, lambda_matrix, lambda_matrix,
-                      lambda_matrix),
-        theta = list(theta_matrix, theta_matrix1, theta_matrix2,
-                     theta_matrix3),
+l_mat <- matrix(c(.7, .8, -.4, .7, .6, .5, .8, -.3, .6, .6, .6, .7, .6, 
+                  .6, .6), nrow = 15, ncol = 1)
+nu_mat <- matrix(c(3.6, 3.1, 2.7, 2.9, 2.5, 2.1, 3.5, 2.6, 3.2, 2.8,
+                   3.5, 3.3, 2.5, 3.4, 2.5), nrow = 15, ncol = 1)
+nu_mat1 <- nu_mat2 <- nu_mat3 <- nu_mat
+nu_mat1[c(1, 14:15), 1] <- c(3.9, 3.8, 2.8)
+nu_mat2[c(9:10, 12, 15), 1] <- c(3.6, 3.2, 3.5, 2.8); nu_mat3[15] <- 2.9
+th_mat <- (c(.6, .6, .8, .6, .8, .5, .7, 1.1, .8, .9, .6, .7, .8, .5, .9))
+th_mat1 <- th_mat2 <- th_mat3 <- th_mat
+th_mat1[1] <- .4; th_mat2[c(6, 14)] <- c(.9, .7); th_mat3[14] <- .7
+PartInv(propsel = .25, pmix = rep(1/4, 4),
+        alpha = list(0, -.7, -1.1, -1.1), psi = list(1, 1.2, 1.3, 1.3),
+        nu = list(nu_mat, nu_mat1, nu_mat2, nu_mat3),
+        lambda = list(l_mat, l_mat, l_mat, l_mat),
+        theta = list(th_mat, th_mat1, th_mat2, th_mat3),
         plot_contour = TRUE, show_mi_result = TRUE,
-        labels = c("Group 1", "Group 2", "Group 3", "Group 4"),
-        custom_colors = c("salmon1", "lightgreen", "skyblue1", "pink")
-        )
-set.seed(7)  
-sim_m <-
-  "f =~ c(1, .7, 1) * x1 + c(.5, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5
-   f ~~ c(1, 1.3, 1.5) * f
-   f ~  c(0, .5, 1) * 1
-   x1 ~ c(0, .3, 0) * 1
-   x3 ~ c(.3, 0, -.3) * 1
-   x1 ~~ c(1, .5, 1) * x1"
-dat_sim <- simulateData(sim_m, sample.nobs = c(80, 100, 110))
-fit_sim <- lavaan::cfa(model = sim_m, data = dat_sim, group = "group")
-PartInv(cfa_fit = fit_sim, propsel = .05, reference = "2")
+        labels = c("G1", "G2", "G3", "G4"),
+        custom_colors = cols, reference = "G2")
 }

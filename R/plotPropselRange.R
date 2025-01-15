@@ -29,8 +29,12 @@ NULL
 #' @return Eight plots illustrating how proportion selected (PS), success ratio 
 #'     (SR), sensitivity (SE), and specificity (SP) change across different 
 #'     proportions of selection under partial and strict invariance conditions.
-#' @param custom_colors Optional argument for specifying colors.
+#' @param custom_colors Optional argument for specifying colors. `NULL` by default.  
 #' @param reference Optional argument for specifying the reference group.
+#' @param add_AI_threshold_lines Whether horizontal lines at AI = 1 and AI = 0.8
+#'     should be plotted. `TRUE` by default.
+#' @param add_vertical_threshold_at Adds a vertical line at a specified threshold
+#'        value for easier comparison. `NULL` by default.    
 #' @param ... Additional arguments.
 #' @examples
 #' \dontrun{
@@ -72,7 +76,9 @@ plotPropselRange <- function(cfa_fit,
                              cutoffs_from = NULL,
                              cutoffs_to = NULL, 
                              custom_colors = NULL, 
-                             reference = NULL, ...
+                             reference = NULL, 
+                             add_AI_threshold_lines = TRUE, 
+                             add_vertical_threshold_at = NULL, ...
                              ) {
   stopifnot("cai_names can only take the following values: PS, SR, SE, SP, AI." =
               (all(cai_names %in% c("PS", "SR", "SE", "SP", "AI"))))
@@ -109,16 +115,16 @@ plotPropselRange <- function(cfa_fit,
     xl <- "Thresholds" # for the plots later
     use <- "cutoffs"
   }
-  n_g <- cfa_fit@Data@ngroups # number of groups
+  num_g <- cfa_fit@Data@ngroups # number of groups
 
-  ls_mat <- matrix(NA, ncol = length(rangeVals), nrow = n_g)
-  AIs <- matrix(NA, ncol = length(rangeVals), nrow = n_g - 1)
+  ls_mat <- matrix(NA, ncol = length(rangeVals), nrow = num_g)
+  AIs <- matrix(NA, ncol = length(rangeVals), nrow = num_g - 1)
   ls_names <- c(t(outer(cai_names, Y = mod_names, FUN = paste, sep = "_")))
   ls <- rep(list(ls_mat), length(ls_names))
   names(ls) <- ls_names
   
   # if pmix is missing, assume equal mixing proportions
-  if (is.null(pmix)) pmix <- as.matrix(c(rep(1 / n_g, n_g)), ncol = n_g)
+  if (is.null(pmix)) pmix <- as.matrix(c(rep(1 / num_g, num_g)), ncol = num_g)
   pmix <- as.vector(pmix)
   
   ylabs <- ""
@@ -173,9 +179,9 @@ plotPropselRange <- function(cfa_fit,
         for (j in seq_along(mod_names)) {
           # if the specified invariance condition is partial inv.,
           ls[[ind]][, p] <-
-            ifelse(rep(mod_names[j] == "par", n_g),
-              as.numeric(pinv$summary[cai, 1:n_g]),
-              as.numeric(pinv$summary_mi[cai, 1:n_g])
+            ifelse(rep(mod_names[j] == "par", num_g),
+              as.numeric(pinv$summary[cai, 1:num_g]),
+              as.numeric(pinv$summary_mi[cai, 1:num_g])
             )
           ylabs <- c(ylabs, paste0(cai, " (", cai_names[i], ")"))
 
@@ -193,7 +199,7 @@ plotPropselRange <- function(cfa_fit,
   
   # extract labels
   labels <- pinv$labels
-  labels2 <- paste(labels, c("(reference)", rep("(focal)", n_g - 1)))
+  labels2 <- paste(labels, c("(reference)", rep("(focal)", num_g - 1)))
 
   rownames(AIs) <- labels[-1]
   colnames(AIs) <- rangeVals
@@ -218,34 +224,63 @@ plotPropselRange <- function(cfa_fit,
   if (!is.null(cai_names)) {
     # iterate over each CAI & invariance condition of interest and produce plots
     for (l in seq_along(ls_names)) {
-      plot(rangeVals, ls[[ls_names[l]]][1, ], type = "l", ylim = c(0, 1),
+      
+      l_lab <- labels2
+      l_col <- colorlist[1:(num_g)]
+      l_lty <- rep(1, num_g)
+      
+      plot(0, type = "l", ylim = c(0, 1), xlim = c(min(rangeVals), max(rangeVals)),
            col = colorlist[1], lwd = 1.5, xlab = xl,
            ylab = ylabs[l],
            main = mains[l],
            cex = 1.1)
-      for (i in seq_len(n_g - 1)) {
+      
+      if (!is.null(add_vertical_threshold_at)) {
+        abline(v = add_vertical_threshold_at, col = "gray", lty = 3)
+        l_lab <- c(l_lab, "Cutoff")
+        l_col <- c(l_col, "gray")
+        l_lty <- c(l_lty, 3)
+      }
+
+      
+      lines(rangeVals, ls[[ls_names[l]]][1, ], type = "l", col = colorlist[1], lwd = 1.5)
+      for (i in seq_len(num_g - 1)) {
         lines(rangeVals, ls[[ls_names[l]]][i + 1, ], type = "l",
               lwd = 1.5, col = colorlist[i + 1])
       }
-      legend(legends[l], legend = labels2, col = colorlist[1:n_g], lty = 1,
+      legend(legends[l], legend = l_lab, col = l_col, lty = l_lty,
              lwd = 1.5, cex = 0.8)  
     }
   }
   if (plotAIs) {
     colorlist <- colorlist[-1]
-    plot(rangeVals, AIs[1,], type = "l", ylim = c(0, 1.5),
-         col = colorlist[1], lwd = 1.5, xlab = xl,
-         ylab = "AI ratio",
-         main = paste0("AI ratios [reference group: ", labels[1], "]"),
-         cex = 1.1)
-    if (n_g > 2) {
-      for (i in seq(from = 2, to = n_g - 1)) {
+    ylim_u <- ifelse(max(AIs) < 1.5, 1.5, round(max(AIs)))
+    
+    l_lab <- labels2[-1]
+    l_col <- colorlist[1:(num_g - 1)]
+    l_lty <- rep(1, num_g - 1)
+    l_lwd <- rep(1.5, num_g - 1)
+    
+    plot(0, xlim = c(min(rangeVals), max(rangeVals)), ylim = c(0, ylim_u),
+         ylab = "AI ratio",cex = 1.1,
+         main = paste0("AI ratios [reference group: ", labels[1], "]"))
+    if (add_AI_threshold_lines) {
+      abline(h = 1, lty = 2, col = "lightgray", lwd = 0.8)
+      abline(h = 0.8, lty = 2, col = "gray42", lwd = .8)
+      l_lab <- c(l_lab, "AI = 1", "AI = 0.8")
+      l_col <- c(l_col, "lightgray", "gray42")
+      l_lty <- c(l_lty, 2, 2)
+      l_lwd <- c(l_lwd, 0.8, 0.8)
+    }
+    lines(rangeVals, AIs[1,], type = "l", col = colorlist[1], lwd = 1.5)
+    if (num_g > 2) {
+      for (i in seq(from = 2, to = num_g - 1)) {
         lines(rangeVals, AIs[i,], type = "l",
               lwd = 1.5, col = colorlist[i])
       }
     }
-    legend("bottomright", legend = labels2[-1], col = colorlist[1:n_g], lty = 1,
-           lwd = 1.5, cex = 0.8)  
+    legend("bottomright", legend = l_lab, col = l_col, lty = l_lty, 
+           lwd = l_lwd, cex = 0.8)  
   }
 }
 

@@ -55,7 +55,7 @@ prep_params <- function(cfa_fit, propsel, cut_z, weights_item, weights_latent,
      alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour,
      labels, n_dim, n_i_per_dim, delete_items, delete_one_cutoff, 
      alpha_r, alpha_f, phi_r, phi_f, psi_r, psi_f, lambda_r, lambda_f, tau_r, tau_f, 
-     nu_r, nu_f, Theta_r, Theta_f, reference, custom_colors) {
+     kappa_r, kappa_f, nu_r, nu_f, Theta_r, Theta_f, reference, custom_colors) {
  
   #### 'alpha', 'nu', 'lambda', 'theta', and 'psi' #### 
   if (is.null(cfa_fit)) {
@@ -71,8 +71,13 @@ prep_params <- function(cfa_fit, propsel, cut_z, weights_item, weights_latent,
     if (is.null(alpha)) { # '|| is.logical(alpha)) && !is.null(alpha_r)'
       alpha <- vector(2, mode = "list")
       if (!is.null(alpha_r)) {
-      alpha[[1]] <- as.numeric(alpha_r); alpha[[2]] <- as.numeric(alpha_f)
-      }
+        alpha[[1]] <- as.numeric(alpha_r); alpha[[2]] <- as.numeric(alpha_f)
+      } 
+      if (!is.null(kappa_r)) {
+        alpha[[1]] <- as.numeric(kappa_r); alpha[[2]] <- as.numeric(kappa_f)
+      }  
+     if (is.null(alpha_r) && is.null(kappa_r))
+       stop("Neither cfa_fit nor alpha estimates were provided.")
     } # else, alpha <- alpha
     if (is.null(psi)) { # '|| is.logical(psi)'
       psi <- vector(2, mode = "list")

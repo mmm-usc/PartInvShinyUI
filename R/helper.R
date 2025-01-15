@@ -204,6 +204,7 @@ mn_sd_cov <- function(weights_item, weights_latent, alpha, psi, lambda, nu,
 compute_cai <- function(weights_item, weights_latent, alpha, psi, lambda, nu, 
                         theta, pmix, propsel, labels, cut_z = NULL, num_g,
                         is_mi = FALSE) {
+  
   lst <- mn_sd_cov(weights_item, weights_latent, alpha, psi, lambda, nu, theta)
 
   if (!is.null(propsel)) {  # if there is an input for selection proportion
@@ -245,7 +246,6 @@ compute_cai <- function(weights_item, weights_latent, alpha, psi, lambda, nu,
     # selection indices for the focal group if its distribution matches the
     # distribution of the reference group (Efocal)
     mn_z_Ef <- sd_z_Ef <- cov_z_xi_Ef <- vector(mode = "list")
-    
     for (i in 2:num_g) {
       mn_z_Ef[i - 1] <- c(crossprod(weights_item, nu[[i]] + lambda[[i]]
                                     %*% alpha[[1]]))

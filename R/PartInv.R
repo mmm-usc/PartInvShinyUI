@@ -105,7 +105,7 @@ NULL
 #'    x1 ~ c(0, .3, 0) * 1
 #'    x3 ~ c(.3, 0, -.3) * 1
 #'    x1 ~~ c(1, .5, 1) * x1"
-#' dat_sim <- simulateData(sim_m, sample.nobs = c(80, 100, 110))
+#' dat_sim <- lavaan::simulateData(sim_m, sample.nobs = c(80, 100, 110))
 #' fit_sim <- lavaan::cfa(model = sim_m, data = dat_sim, group = "group")
 #' PartInv(cfa_fit = fit_sim, propsel = .05, plot_contour = TRUE, 
 #'         custom_colors = cols[1:3], show_mi_result = TRUE)
@@ -177,7 +177,7 @@ PartInv <- function(cfa_fit = NULL,
   pl <- unbiasr:::prep_params(cfa_fit, propsel, cut_z, weights_item, weights_latent,
                     alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour,
                     labels, n_dim = NULL, n_i_per_dim = NULL, delete_items = NULL, delete_one_cutoff = NULL, alpha_r, alpha_f,
-                    phi_r, phi_f, psi_r, psi_f, lambda_r, lambda_f, tau_r, tau_f, nu_r,
+                    phi_r, phi_f, psi_r, psi_f, lambda_r, lambda_f, tau_r, tau_f, kappa_r, kappa_f, nu_r, 
                     nu_f, Theta_r, Theta_f, reference, custom_colors)
   alpha <- pl$alpha
   psi <- pl$psi

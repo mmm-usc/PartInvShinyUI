@@ -18,7 +18,7 @@ item_deletion_h(
   pmix = NULL,
   pmix_ref = 0.5,
   plot_contour = TRUE,
-  labels = c("Reference", "Focal"),
+  labels = NULL,
   n_dim = 1,
   n_i_per_dim = NULL,
   delete_items = NULL,
