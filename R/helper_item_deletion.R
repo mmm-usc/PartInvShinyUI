@@ -178,7 +178,11 @@ err_improv_acai <- function(i, s_full, s_del1, num_g) {
   h_rf.1 <- (h_r > 0.1 | apply((h_f_mat > 0.1), MARGIN = 1, FUN = all))
 
   vals <- c("TP", "FP", "TN", "FN")
-
+  cat1 <- function(i, vals, val_i) {
+    cat("Increases in aggregate CAI after deleting item ", i, "may be
+         misleading due to the \n mixing proportion. Examine ", vals[val_i],
+        "values from detailed output tables before proceeding.\n")
+  }
   # TP_f decreases/remains unchanged & TP_r increases
   if(r_bool[1] && f_bool_geq[1] && h_rf.1[1]) cat1(1, vals, 1)
   # FP_r decreases and FP_f increases/remains unchanged
@@ -188,11 +192,7 @@ err_improv_acai <- function(i, s_full, s_del1, num_g) {
     # FN_r decreases and FN_f increases/remains unchanged
   if(!r_bool[4] && f_bool_leq[4] && h_rf.1[4]) cat1(4, vals, 4)
 
-  cat1 <- function(i, vals, val_i) {
-    cat("Increases in aggregate CAI after deleting item ", i, "may be
-         misleading due to the \n mixing proportion. Examine ", vals[val_i],
-        "values from detailed output tables before proceeding.\n")
-    }
+
   }
 
 #' @title
