@@ -147,7 +147,6 @@
 #' item_deletion_h(cfa_fit = fit, propsel = .05)
 #' 
 #' # Simulate random data to fit a multigroup cfa
-#' 
 #' set.seed(7)  
 #' sim_m <-
 #'   "f =~ c(1, .7, 1) * x1 + c(.8, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5
@@ -265,8 +264,10 @@ item_deletion_h <- function(cfa_fit = NULL,
                             store_par[[1]]$summary[1:num_g]))
   h_s_p <- update_rows_in_lists_of_dfs(h_s_p, temp, ind = 1)
  
-  temp <- list(apply(as.data.frame(store_par[[1]]$summary[,(num_g + 1):(2 * num_g - 1)]),MARGIN =2,
-              FUN = function(x) cohens_h(store_par[[1]]$summary[,1], x)))
+  temp <- apply(as.data.frame(
+    store_par[[1]]$summary[,(num_g + 1):(2 * num_g - 1)]), MARGIN = 2,
+    FUN = function(x) cohens_h(store_par[[1]]$summary[, 1], x))
+  temp <- split(temp, colnames(temp))
   h_R_Ef <- update_rows_in_lists_of_dfs(h_R_Ef, temp, ind = 1)
 
   # Compute aggregate CAI on the full item set
@@ -334,9 +335,13 @@ item_deletion_h <- function(cfa_fit = NULL,
     
     # h: difference in CAI under partial invariance for the ref group vs. for 
     # the expected CAI for the focal group with the full item set
-    temp <- list(apply(as.data.frame(store_par[[i]]$summary[,(num_g + 1):(2 * num_g - 1)]),MARGIN =2,
-               FUN = function(x) cohens_h(store_par[[i]]$summary[,1], x)))
+    
+    temp <- apply(as.data.frame(
+      store_par[[i]]$summary[, (num_g + 1):(2 * num_g - 1)]), MARGIN = 2,
+      FUN = function(x) cohens_h(store_par[[i]]$summary[, 1], x))
+    temp <- split(temp, colnames(temp))
     h_R_Ef <- update_rows_in_lists_of_dfs(h_R_Ef, temp, ind = i)
+    
     
     # change in h_R_Ef_del when item i is deleted (under partial invariance)
     delta_h_R_Ef <- Map(function(df, df2) {
@@ -375,7 +380,7 @@ item_deletion_h <- function(cfa_fit = NULL,
   
   
   # get the subset of items the user requested
-  AI_ratios <- AI_ratios[final_set, ]
+  AI_ratios <- AI_ratios[c("Full", final_set), ]
   acai_p <- lapply(acai_p, FUN = function(x) x[c("Full", final_set),])
   h_acai_p <- lapply(h_acai_p, FUN = function(x) x[final_set,])
   h_acai_s_p <- lapply(h_acai_s_p, FUN = function(x) x[c("Full", final_set),])
@@ -387,25 +392,27 @@ item_deletion_h <- function(cfa_fit = NULL,
   # not returned? or not printed by the class method? h_acai_s_p, delta_h_acai_s_p, delta_h_s_p 
   
   out <- list(
-    "AI_ratios" = AI_ratios,
     "ACAI" = acai_p,
     "h_acai_p"= h_acai_p,
-    "h_acai_s_p"= h_acai_s_p,
-    "delta_h_acai_s_p" = delta_h_acai_s_p,
+   # "h_acai_s_p"= h_acai_s_p,
+   # "delta_h_acai_s_p" = delta_h_acai_s_p,
     "h_R_Ef" = h_R_Ef,
-    "delta_h_R_Ef" = delta_h_R_Ef,
-    "delta h (impact of deleting item i)" = delta_h_s_p
+    "delta_h_R_Ef" = delta_h_R_Ef#,
+  #  "delta h (impact of deleting item i)" = delta_h_s_p
    #   list("referenceGroup" = delta_h_s_p_R_del_i,
    #        "focalGroup(s)" = delta_h_s_p_foc_del_i)
     )
   
-  # apply rounding
+  # apply rounding and get the composite index columns
   out <- lapply(out, function(inner_list) {
     lapply(inner_list, function(df) {
+      df <- df[, 5:8]
       round(df, digits)
     })
   })
+  AI_ratios <- round(AI_ratios, digits)
   
+  out <- c(list("AI_ratios" = AI_ratios), out)
   
   ###class(out) <- "itemdeletion"
   return(out)

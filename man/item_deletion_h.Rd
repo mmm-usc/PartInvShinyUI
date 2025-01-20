@@ -33,6 +33,7 @@ item_deletion_h(
   nu_f = nu_r,
   Theta_r = NULL,
   Theta_f = Theta_r,
+  digits = 3,
   ...
 )
 }
@@ -103,6 +104,8 @@ onto calls to PartInv.}
 \item{alpha_r, alpha_f, nu_r, nu_f, Theta_r, Theta_f, psi_r, psi_f, lambda_r, lambda_f, pmix_ref}{Deprecated; included only for backward compatibility. When comparing two
 groups, parameters with the '_r' suffix refer to the reference group while
 parameters with the '_f' suffix refer to the focal group.}
+
+\item{digits}{Number of digits for rounding. 3 by default.}
 
 \item{...}{Other arguments passed to the \code{\link[graphics]{contour}}
 function.}

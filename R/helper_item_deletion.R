@@ -112,22 +112,18 @@ get_aggregate_CAI <- function(pmix, store_summary, inv_cond) {
   # FP <- sum(pmix * store_summary[2, seq_len(num_g)])
   # TN <- sum(pmix * store_summary[3, seq_len(num_g)])
   # FN <- sum(pmix * store_summary[4, seq_len(num_g)])
-  # 
-  
-  store <- store_summary[, seq_len(num_g)]
-  
+
   weighted_pair_sum <- function(vec) {
     as.numeric(
       sapply(2:num_g, function(i) vec[1] * pmix[1] + vec[i] * pmix[i])
     )
   }
-
+  store <- store_summary[, seq_len(num_g)]
   TP <- weighted_pair_sum(store[1,])
   FP <- weighted_pair_sum(store[2,])
   TN <- weighted_pair_sum(store[3,])
   FN <- weighted_pair_sum(store[4,])
   
-  # Compute metrics
   PS <- TP + FP
   SR <- TP / (TP + FP)
   SE <- TP / (TP + FN)
@@ -156,43 +152,31 @@ get_aggregate_CAI <- function(pmix, store_summary, inv_cond) {
 #' @param s_del1 PartInv summary for the case where item i is excluded.
 #' @param num_g Number of groups
 err_improv_acai <- function(i, s_full, s_del1, num_g) {
-  # store the focal groups' values in a list
-  focals <- list(s_full[,2:num_g], s_del1[,2:num_g])
+  # compute Cohen's h for the difference between full and drop one indices
+  h_r <- cohens_h(s_full[,1], s_del1[,1])
+  h_f <- Map(cohens_h, s_full, s_del1)[-1]
+  # check the difference for the reference or focal groups has Cohen's h > 0.1
+  h_rf <- (h_r > 0.1 | unlist(h_f) > .1)
   
-  # compute Cohen's h for the difference between full and drop one indices for 
-  # the reference group
-  h_r <- cohens_h(s_full[,1], s_del1[,1]) #cohens_h(r, r_del1)
-  # compute Cohen's h for the difference between full and drop one indices for 
-  # the focal groups
-  h_f <- lapply(focals, FUN = function(x) cohens_h(x[[1]], x[[2]])) #h_f <- cohens_h(f_full, f_del1)
   # Check for changes (boolean)
   r_bool <- s_full[,1] < s_del1[,1] 
-  f_bool_leq1 <- s_full[,2:num_g] <= s_del1[2:num_g]
-  f_bool_leq <- apply(f_bool_leq1, MARGIN = 1, FUN = all)
-  f_bool_geq1 <- s_full[,2:num_g] >= s_del1[2:num_g]
-  f_bool_geq <- apply(f_bool_leq1, MARGIN = 1, FUN = all)
-  
-  # wrangle into a matrix to apply operations by row
-  h_f_mat <- matrix(unlist(h_f), nrow = 8, ncol = (num_g - 1))
-  # check the difference for the reference or focal groups has Cohen's h > 0.1
-  h_rf.1 <- (h_r > 0.1 | apply((h_f_mat > 0.1), MARGIN = 1, FUN = all))
+  f_bool_leq1 <- s_full[, 2:num_g, drop = FALSE] <= s_del1[, 2:num_g, drop = FALSE]
+  f_bool_leq <- apply(f_bool_leq1, MARGIN = 1, FUN = all) # across focal group(s)
+  f_bool_geq1 <- s_full[, 2:num_g, drop = FALSE] >= s_del1[, 2:num_g, drop = FALSE]
+  f_bool_geq <- apply(f_bool_leq1, MARGIN = 1, FUN = all) # across focal group(s)
 
   vals <- c("TP", "FP", "TN", "FN")
-  cat1 <- function(i, vals, val_i) {
-    cat("Increases in aggregate CAI after deleting item ", i, "may be
-         misleading due to the \n mixing proportion. Examine ", vals[val_i],
-        "values from detailed output tables before proceeding.\n")
+  cat1 <- function(i) {
+    cat("Increases in ACAI for item ", i, " may be misleading due to pmix. Proceed with caution.")
   }
   # TP_f decreases/remains unchanged & TP_r increases
-  if(r_bool[1] && f_bool_geq[1] && h_rf.1[1]) cat1(1, vals, 1)
+  if (r_bool[1] && all(f_bool_geq[1]) && h_rf[1]) cat1(1, vals)
   # FP_r decreases and FP_f increases/remains unchanged
-  if(!r_bool[2] && f_bool_leq[2] && h_rf.1[2]) cat1(2, vals, 2)
+  if (!r_bool[2] && all(f_bool_leq[2]) && h_rf[2]) cat1(2, vals)
   # TN_f decreases/remains unchanged and TN_r increases
-  if(r_bool[3] && f_bool_geq[3] && h_rf.1[3]) cat1(3, vals, 3)
+  if (r_bool[3] && all(f_bool_geq[3]) && h_rf[3]) cat1(3, vals)
     # FN_r decreases and FN_f increases/remains unchanged
-  if(!r_bool[4] && f_bool_leq[4] && h_rf.1[4]) cat1(4, vals, 4)
-
-
+  if (!r_bool[4] && all(f_bool_leq[4]) && h_rf[4]) cat1(4, vals)
   }
 
 #' @title

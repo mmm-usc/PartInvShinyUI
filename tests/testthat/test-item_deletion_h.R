@@ -190,8 +190,8 @@ ex_partial <- PartInv(propsel = propsel,
                       plot_contour = plot_contour,
                       labels = c("Reference", "Focal"))
 
-test_that("str_par_h() returns data frames", {
-  acc <- vapply(str_par_h(ex_strict, ex_partial), FUN = inherits, 
+test_that("returns data frames", {
+  acc <- vapply(cohens_h(ex_strict, ex_partial), FUN = inherits, 
                 what = c("data.frame"), FUN.VALUE = logical(1))
   expect_true(any(acc))
 })
