@@ -1,3 +1,11 @@
+create_list_of_dfs <- function(ls_len, ncol, nrow, df_cn, df_rn) {
+  lapply(seq_len(ls_len), function(x) {
+    df <- data.frame(matrix(NA, ncol = ncol, nrow = nrow))
+    colnames(df) <- df_cn; rownames(df) <- df_rn
+    df
+  })
+}
+
 
 # Function that performs formatting for various variables to be returned in
 # item_deletion_h
@@ -84,6 +92,7 @@ get_aggregate_CAI <- function(pmix, store_summary, inv_cond) {
     stop("The sum of pmix must be equal to 1.")
   }
   
+  num_g <- length(pmix)
   # Check for consistency between pmix and store_summary
   if ((inv_cond == "partial") && ((2 * length(pmix) - 1) != ncol(store_summary))) {
     stop("Length of pmix must match the number of groups in store_summary.")
@@ -91,12 +100,25 @@ get_aggregate_CAI <- function(pmix, store_summary, inv_cond) {
   if ((inv_cond == "strict") && (length(pmix) != ncol(store_summary))) {
     stop("Length of pmix must match the number of groups in store_summary.")
   }
+  # Compute weighted aggregates for TP, FP, TN, FN 
+  # TP <- sum(pmix * store_summary[1, seq_len(num_g)]) # this gets the aggregate across groups, it should be aggregates between the reference and one focal group
+  # FP <- sum(pmix * store_summary[2, seq_len(num_g)])
+  # TN <- sum(pmix * store_summary[3, seq_len(num_g)])
+  # FN <- sum(pmix * store_summary[4, seq_len(num_g)])
+  # 
   
-  # Compute weighted aggregates for TP, FP, TN, FN
-  TP <- sum(pmix * store_summary[1,])
-  FP <- sum(pmix * store_summary[2,])
-  TN <- sum(pmix * store_summary[3,])
-  FN <- sum(pmix * store_summary[4,])
+  store <- store_summary[, seq_len(num_g)]
+  
+  weighted_pair_sum <- function(vec) {
+    as.numeric(
+      sapply(2:num_g, function(i) vec[1] * pmix[1] + vec[i] * pmix[i])
+    )
+  }
+
+  TP <- weighted_pair_sum(store[1,])
+  FP <- weighted_pair_sum(store[2,])
+  TN <- weighted_pair_sum(store[3,])
+  FN <- weighted_pair_sum(store[4,])
   
   # Compute metrics
   PS <- TP + FP
@@ -104,7 +126,9 @@ get_aggregate_CAI <- function(pmix, store_summary, inv_cond) {
   SE <- TP / (TP + FN)
   SP <- TN / (TN + FP)
   
-  return(c(PS = PS, SR = SR, SE = SE, SP = SP))
+  df <- rbind(TP, FP, TN, FN, PS, SR, SE, SP)
+  ls <- split(as.matrix(df), col(df))
+  return(ls)
 }
 
 

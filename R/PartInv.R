@@ -174,11 +174,14 @@ PartInv <- function(cfa_fit = NULL,
   # for backward compatibility with different input names ####
   #source(file.path(find.package("unbiasr"), "R", "prep_params.R"))
   # pl: parameter list after adjustments
-  pl <- unbiasr:::prep_params(cfa_fit, propsel, cut_z, weights_item, weights_latent,
-                    alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour,
-                    labels, n_dim = NULL, n_i_per_dim = NULL, delete_items = NULL, delete_one_cutoff = NULL, alpha_r, alpha_f,
-                    phi_r, phi_f, psi_r, psi_f, lambda_r, lambda_f, tau_r, tau_f, kappa_r, kappa_f, nu_r, 
-                    nu_f, Theta_r, Theta_f, reference, custom_colors)
+  pl <- unbiasr:::prep_params(
+    cfa_fit, propsel, cut_z, weights_item, weights_latent, alpha, psi, lambda, 
+    theta, nu, pmix, pmix_ref, plot_contour, labels, n_dim = NULL, 
+    n_i_per_dim = NULL, delete_items = NULL, delete_one_cutoff = NULL, alpha_r, 
+    alpha_f, phi_r, phi_f, psi_r, psi_f, lambda_r, lambda_f, tau_r, tau_f, 
+    kappa_r, kappa_f, nu_r, nu_f, Theta_r, Theta_f, reference, custom_colors
+    )
+  
   alpha <- pl$alpha
   psi <- pl$psi
   lambda <- pl$lambda

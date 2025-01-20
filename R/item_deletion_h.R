@@ -181,16 +181,19 @@ item_deletion_h <- function(cfa_fit = NULL,
                             Theta_r = NULL, Theta_f = Theta_r,
                             ...) {
   functioncall <- match.call()
+  CAIs <- c("TP", "FP", "TN", "FN", "PS", "SR", "SE", "SP")
   
   # for backward compatibility with different input names ####
   # pl: parameter list after adjustments
-  pl <- unbiasr:::prep_params(cfa_fit, propsel, cut_z, weights_item, weights_latent,
-                              alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour,
-                              labels, n_dim = n_dim, n_i_per_dim = n_i_per_dim,
-                              delete_items = delete_items, 
-                              delete_one_cutoff = delete_one_cutoff, alpha_r, alpha_f,
-                              phi_r = NULL, phi_f = NULL, psi_r, psi_f, lambda_r, lambda_f, tau_r = NULL, tau_f = NULL, 
-                              kappa_r = NULL, kappa_f = NULL, nu_r, nu_f, Theta_r, Theta_f, reference = NULL, custom_colors)
+  pl <- unbiasr:::prep_params(
+    cfa_fit, propsel, cut_z, weights_item, weights_latent, alpha, psi, lambda, 
+    theta, nu, pmix, pmix_ref, plot_contour, labels, n_dim = n_dim, 
+    n_i_per_dim = n_i_per_dim, delete_items = delete_items, 
+    delete_one_cutoff = delete_one_cutoff, alpha_r, alpha_f,
+    phi_r = NULL, phi_f = NULL, psi_r, psi_f, lambda_r, lambda_f, tau_r = NULL, 
+    tau_f = NULL, kappa_r = NULL, kappa_f = NULL, nu_r, nu_f, Theta_r, Theta_f, 
+    reference = NULL, custom_colors)
+  
   alpha <- pl$alpha
   psi <- pl$psi
   lambda <- pl$lambda
@@ -203,6 +206,7 @@ item_deletion_h <- function(cfa_fit = NULL,
   weights_latent <- pl$weights_latent
   weights_item <- pl$weights_item
 
+  #####
   # # Determine which set of items will be returned
   # return_items <- c()
   # if(is.null(delete_items)) { # default: return only the biased items.
@@ -216,25 +220,30 @@ item_deletion_h <- function(cfa_fit = NULL,
   #     stop("'delete_items' cannot take integers > the scale length.")}
   #   return_items <- delete_items
   # }
-  return_items_labels <- paste0("del_i", 1:n_i)#paste0("del_i", return_items)
-  
-  delta_h_str_par_h.foc.del_i <- vector(mode = "list", length = num_g - 1)
-  for (k in seq_along(delta_h_str_par_h.foc.del_i)) {
-    delta_h_str_par_h.foc.del_i[[k]] <- as.data.frame(matrix(nrow = 8, ncol = n_i)) #length(return_items)))
-    colnames(delta_h_str_par_h.foc.del_i[[k]]) <- return_items_labels
-    }
-  
-  store_str <- store_par <- s_p_ref_list <- s_p_foc_list <- vector(mode = "list", n_i + 1)
-  delta_h_str_par_h.ref.del_i <- as.data.frame(matrix(nrow = 8, ncol = n_i)) #delta_h_R_Ef <- 
-  
-  h_R_Ef <- as.data.frame(matrix(nrow = 8, ncol = n_i + 1)) #h_s_p_ref <- h_s_p_foc <- 
-  acai_p <- acai_s <- h_acai_s_p <- as.data.frame(matrix(nrow = 4, ncol = n_i + 1))
-  h_acai_p <- delta_h_s_p_acai <- as.data.frame(matrix(nrow = 4, ncol = n_i))
-  AI_ratios <- as.data.frame(matrix(nrow = num_g + 1, ncol = n_i + 1))
+  # return items labels
+  return_labels <- paste0("del_i", 1:n_i) # paste0("del_i", return_items)
+  #####
 
-  out_elements_par <- c("propsel", "cutpt_xi", "cutpt_z", "summary",
-                        "bivar_data", "ai_ratio", "labels", "functioncall")
-  out_elements_str <- c(paste0(out_elements_par[1:6], "_mi"), out_elements_par[7:8])
+  delta_h_str_par_h.foc.del_i <- 
+    create_list_of_dfs(ls_len = num_g - 1, ncol = n_i, nrow = 8, 
+                       df_cn = return_labels, df_rn = CAIs) 
+  acai_p <- acai_s <- h_acai_s_p <- 
+    create_list_of_dfs(ls_len = num_g - 1, ncol = 8, nrow = n_i + 1, 
+                       df_cn = CAIs, df_rn = c("Full", return_labels))
+  h_acai_p <- create_list_of_dfs(ls_len = num_g - 1, ncol = 8, nrow = n_i, 
+                                 df_cn = CAIs, df_rn = return_labels) 
+  
+  store_str <- store_par <- s_p_ref <- s_p_foc <- vector(mode = "list", n_i + 1)
+  delta_h_str_par_h.ref.del_i <- as.data.frame(matrix(nrow = 8, ncol = n_i), 
+                                               row.names = CAIs) #delta_h_R_Ef <- 
+  
+  # h_R_Ef <- as.data.frame(matrix(nrow = 8, ncol = n_i + 1)) #h_s_p_ref <- h_s_p_foc <- 
+  # delta_h_s_p_acai <- as.data.frame(matrix(nrow = 4, ncol = n_i))
+  AI_ratios <- as.data.frame(matrix(ncol = num_g, nrow = n_i + 1))
+
+  out_par <- c("propsel", "cutpt_xi", "cutpt_z", "summary", "bivar_data", 
+               "ai_ratio", "labels", "functioncall")
+  out_str <- c(paste0(out_par[1:6], "_mi"), out_par[7:8])
   
   # Call PartInv with the full item set under partial and strict invariance ###
   store_par[[1]] <- 
@@ -244,44 +253,56 @@ item_deletion_h <- function(cfa_fit = NULL,
             pmix = pmix, plot_contour = plot_contour, labels = labels,
             show_mi_result = TRUE)
   class(store_par[[1]]) <- "PartInv"
-  store_str[[1]] <- store_par[[1]][out_elements_str]
+  store_str[[1]] <- store_par[[1]][out_str]
   class(store_str[[1]]) <- "PartInv"
 
   # h: strict vs. partial invariance (full item set) for all groups
-  # list_str_par_h.full: list of num_g dfs with columns `strict`, `partial`, `h`
-  list_str_par_h.full <- str_par_h(store_str[[1]]$summary_mi,
+  str_par_h.full <- str_par_h(store_str[[1]]$summary_mi,
                                    store_par[[1]]$summary, num_g = num_g)
-  # s_p_ref_list is a list of length n_i dataframes, for the reference group. 
-  # each df contains strict, partial, and h columns for a given item set. Here, full.
-  s_p_ref_list[[1]] <- list_str_par_h.full$Reference
-  # s_p_foc_list is a list of length n_i lists, each element is a list of dfs. 
-  # the outer list is the item set, the inner list is the focal groups; e.g., s_p_foc_list[[1]][[1]] == s_p_foc_list[[1]][["Focal_1"]], which is the CAI and h for the full item set for the Focal 1 group.
-  s_p_foc_list[[1]] <- list_str_par_h.full[2:num_g]
+  # s_p_ref is a list of length n_i dataframes, for the reference group. each df contains strict, partial, and h columns for a given item set. Here, full.
+  s_p_ref[[1]] <- str_par_h.full$Reference
+  # s_p_foc is a list of length n_i lists, each element is a list of dfs. the outer list is the item set, the inner list is the focal groups; e.g., s_p_foc[[1]][[1]] == s_p_foc[[1]][["Focal_1"]], which is the CAI and h for the full item set for the Focal 1 group.
+  s_p_foc[[1]] <- str_par_h.full[2:num_g]
  
   
-  
-  ### h_R_Ef[1] <- apply(store_par[[1]]$summary[,(num_g + 1):(2 * num_g - 1)], 
-  ###                    MARGIN = 2,
-  ###                    FUN = function(x) cohens_h(store_par[[1]]$summary[,1], x))#cohens_h(partial$Reference, partial$`E_R(Focal)`)
+  ### h_R_Ef[1] <- apply(
+  ###   store_par[[1]]$summary[,(num_g + 1):(2 * num_g - 1)],
+  ###   MARGIN = 2, FUN = function(x) cohens_h(store_par[[1]]$summary[,1], x))      #cohens_h(partial$Reference, partial$`E_R(Focal)`)
 
   # Compute aggregate CAI on the full item set
-  ### acai_p[1] <- get_aggregate_CAI(pmix, store_par[[1]]$summary, inv_cond = "partial")
-  ### acai_s[1] <- get_aggregate_CAI(pmix, store_str[[1]]$summary_mi, inv_cond = "strict")
+  temp_acai_p <- get_aggregate_CAI(pmix, store_par[[1]]$summary, inv_cond = "partial")
+  acai_p <- Map(function(df, vec) {
+    df[1,] <- vec
+    df
+  }, acai_p, temp_acai_p)
+  temp_acai_s <- get_aggregate_CAI(pmix, store_str[[1]]$summary_mi, inv_cond = "strict")
+  acai_s <- Map(function(df, vec) {
+    df[1,] <- vec
+    df
+  }, acai_s, temp_acai_s)
+  
+  # compute cohen's h for the difference between the strict and partial inv. conditions
+  # (on the first row of the data frames in each element of the two lists)
+  temp_h_acai_s_p <- mapply(function(df_s, df_p) {
+    cohens_h(df_s[1, ], df_p[1, ]) 
+  }, acai_s, acai_p, SIMPLIFY = FALSE)
+  
+  # store each vector in the first row of the corresponding dataframe in h_acai_s_p
+  h_acai_s_p <- mapply(function(df, temp) {
+    df[1, ] <- temp
+    df 
+  }, h_acai_s_p, temp_h_acai_s_p, SIMPLIFY = FALSE)
 
   # h: difference between strict and partial invariance for aggregate CAI
-  ### h_acai_s_p[1] <- cohens_h(acai_s[1], acai_p[1])
-  ### AI_ratios[, 1] <- as.vector(c(store_str[[1]]$ai_ratio_mi, 
-  ###                               store_par[[1]]$ai_ratio), mode = "double")
+   AI_ratios[1,] <- as.vector(c(1, store_par[[1]]$ai_ratio), mode = "double")
 
   # If no cutoff was provided, set propsel based on PartInv output with all items
   if(is.null(delete_one_cutoff)) {
     propsel_p <- store_par[[1]]$propsel
-    propsel_s <- store_str[[1]]$propsel_mi
     cut_z <- NULL
   } else {
     cut_z <- delete_one_cutoff
-    propsel_p <- NULL
-    propsel_s <- NULL
+    propsel_p <- NULL; propsel_s <- NULL
   }
   
   # Item deletion scenarios ####
@@ -299,7 +320,7 @@ item_deletion_h <- function(cfa_fit = NULL,
               pmix = pmix, plot_contour = plot_contour, labels = labels,
               show_mi_result = TRUE)
     class(store_par[[i]]) < "PartInv"
-    store_str[[i]] <- store_par[[i]][out_elements_str]
+    store_str[[i]] <- store_par[[i]][out_str]
     class(store_str[[i]]) <- "PartInv"
     
     # Check whether improvements in ACAI may be misleading due pmix
@@ -309,24 +330,22 @@ item_deletion_h <- function(cfa_fit = NULL,
                     s_del1 = store_str[[i]]$summary_mi, num_g = num_g)
     
     # h: strict vs. partial invariance (delete-one item set) for all groups
-    # list_str_par_h.del_i: list of num_g dataframes with columns `strict`,
-    # `partial`, `h` (delete-one item set)
-    list_str_par_h.del_i <- str_par_h(store_str[[i]]$summary_mi, 
+    str_par_h.del_i <- str_par_h(store_str[[i]]$summary_mi, 
                                       store_par[[i]]$summary, num_g = num_g)
-    s_p_ref_list[[i]] <- list_str_par_h.del_i$Reference
-    s_p_foc_list[[i]] <- list_str_par_h.del_i[2:num_g]
+    s_p_ref[[i]] <- str_par_h.del_i$Reference
+    s_p_foc[[i]] <- str_par_h.del_i[2:num_g]
 
     # delta h: comparing CAI under strict vs. partial invariance when item i is 
     # deleted (i.e. the change in h_s_p_ref and h_s_p_foc) for all groups
     delta_h_str_par_h.ref.del_i[,i - 1] <- delta_h(
-      as.data.frame(s_p_ref_list[[1]])$h, 
-      as.data.frame(s_p_ref_list[[i]])$h)
+      as.data.frame(s_p_ref[[1]])$h, 
+      as.data.frame(s_p_ref[[i]])$h)
     
-    focal_h.full <- lapply(s_p_foc_list[[1]], FUN = function(x) as.data.frame(x)$h)
-    focal_h.del_i <- lapply(s_p_foc_list[[i]], FUN = function(x) as.data.frame(x)$h)
+    focal_h.full <- lapply(s_p_foc[[1]], FUN = function(x) as.data.frame(x)$h)
+    focal_h.del_i <- lapply(s_p_foc[[i]], FUN = function(x) as.data.frame(x)$h)
     
     for (k in seq_along(focal_h.del_i)) {
-      delta_h_str_par_h.foc.del_i[[k]][,return_items_labels[i - 1]] <- 
+      delta_h_str_par_h.foc.del_i[[k]][,return_labels[i - 1]] <- 
         delta_h(focal_h.full[[k]], focal_h.del_i[[k]])
     } 
     
@@ -341,66 +360,100 @@ item_deletion_h <- function(cfa_fit = NULL,
     ### delta_h_R_Ef[i-1] <- delta_h(h_R_Ef[1], h_R_Ef[i])
 
     # Weight the aggregate SR, SE, SP indices under partial and strict invariance
-    ###  acai_p[i] <- get_aggregate_CAI(pmix, store_par[[i]]$summary, 
-    ###                                inv_cond = "partial")
-    ### acai_s[i] <- get_aggregate_CAI(pmix, store_str[[i]]$summary_mi, 
-    ###                                 inv_cond = "strict")
-    # h for the difference between aggregate SE, SR, SP under strict vs. partial invariance
-    ### h_acai_s_p[i] <- cohens_h(acai_s[i], acai_p[i])
+    temp_acai_p <- get_aggregate_CAI(pmix, store_par[[i]]$summary, inv_cond = "partial")
+    acai_p <- Map(function(df, vec) {
+      df[i, ] <- vec
+      df
+    }, acai_p, temp_acai_p)
+    temp_acai_s <- get_aggregate_CAI(pmix, store_str[[i]]$summary_mi, inv_cond = "strict")
+    acai_s <- Map(function(df, vec) {
+      df[i, ] <- vec
+      df
+    }, acai_s, temp_acai_s)
+    # compute cohen's h for the difference between the strict and partial inv. conditions
+    # (on the i-th row of the data frames in each element of the two lists)
+    temp_h_acai_s_p <- mapply(function(df_s, df_p) {
+      cohens_h(df_s[i, ], df_p[i, ]) 
+    }, acai_s, acai_p, SIMPLIFY = FALSE)
+    
+    # store each vector in the i-th row of the corresponding dataframe in h_acai_s_p
+    h_acai_s_p <- mapply(function(df, temp) {
+      df[i, ] <- temp
+      df 
+    }, h_acai_s_p, temp_h_acai_s_p, SIMPLIFY = FALSE)
+    
     # h: change in aggregate CAI when an item is deleted under partial invariance
-    ### h_acai_p[i - 1] <- cohens_h(acai_p[1], acai_p[i])
+   temp_h_acai_p <- lapply(acai_p, function(df) cohens_h(df[1, ], df[i, ]))
+   h_acai_p <- Map(function(df, vec) {
+     df[i - 1, ] <- vec
+     df
+   }, h_acai_p, temp_h_acai_p)                   
     
     ### delta_h_s_p_acai[i - 1] <- delta_h(h_acai_s_p[1], h_acai_s_p[i])
 
-    ###  AI_ratios[, i] <- as.vector(c(store_str[[i]]$ai_ratio_mi, 
-    ###                               store_par[[i]]$ai_ratio), mode = "double")
+      AI_ratios[i,] <- as.vector(c(1, store_par[[i]]$ai_ratio), mode = "double")
   }
- 
-  colnames(delta_h_str_par_h.ref.del_i) <- return_items_labels
-  # Format stored variables
-    vars <- list("AI_ratios" = AI_ratios, "h_R_Ef" = h_R_Ef, 
-                 "delta_h_str_par_h.ref.del_i" = delta_h_str_par_h.ref.del_i,
-                 ###"delta_h_str_par_h.foc.del_i" = delta_h_str_par_h.foc.del_i,
-                 "store_str" = store_str, "store_par" = store_par,
-                 "s_p_ref_list" = s_p_ref_list, "s_p_foc_list" = s_p_foc_list, 
-                 ###"acai_p" = acai_p, "h_acai_s_p" = h_acai_s_p, 
-                 ### "h_acai_p" = h_acai_p, "delta_h_s_p_acai" = delta_h_s_p_acai, 
-                 ###  "delta_h_R_Ef" = delta_h_R_Ef, 
-                 ###  "return_items" = return_items
-               functioncall = functioncall
-               )
-   ###vlist <- format_item_del(n_i, l = vars)
 
-  # Declare classes
-  ###  class(vlist$store_par) <- class(vlist$store_str) <-  c("PartInvList", "PartInv")
-  ###  class(vlist$h_s_p_list_ref) <- class(vlist$h_s_p_list_foc) <-  
-  ###    c("PartInvList", "PartInv", "PartInvGroups")
- 
-  #  vlist <- list("delta_h_str_par_h.ref.del_i" = delta_h_str_par_h.ref.del_i, 
-  #                "delta_h_str_par_h.foc.del_i" = delta_h_str_par_h.foc.del_i)#TEMP
+  colnames(delta_h_str_par_h.ref.del_i) <- return_labels
+  rownames(AI_ratios) <- c("Full", return_labels)
+
   out <- list(
-    # "ACAI" = vlist$acai_p,
-    # "h ACAI (deletion)" = vlist$h_acai_p,
-    # "h ACAI SFI-PFI" = vlist$h_acai_s_p,
-    # "delta h ACAI SFI-PFI (deletion)" = vlist$delta_h_s_p_acai,
-    # "AI Ratio" = vlist$AI_ratios,
-    # "h CAI Ref-EF" = vlist$h_R_Ef,
-    # "delta h CAI Ref-EF (deletion)" = vlist$delta_h_R_Ef,
+    "AI_ratios" = AI_ratios,
+    "ACAI" = acai_p,
+    "h_acai_p"= h_acai_p,
+    "h_acai_s_p"= h_acai_s_p,
     "delta h (impact of deleting item i)" = 
       list("referenceGroup" = delta_h_str_par_h.ref.del_i,
-           "focalGroup(s)" = delta_h_str_par_h.foc.del_i)#,
-    # "h SFI-PFI by groups" = list("reference" = vlist$h_s_p_list_ref, 
-    #                              "focal" = vlist$h_s_p_list_foc),
-    # "PartInv" = list("strict" = vlist$store_str, "partial" = vlist$store_par),
-    # "return_items" = return_items
+           "focalGroup(s)" = delta_h_str_par_h.foc.del_i)
     )
+  
   ###class(out) <- "itemdeletion"
-
   return(out)
 }
+
+# # Format stored variables
+# vars <- list("AI_ratios" = AI_ratios, "h_R_Ef" = h_R_Ef, 
+#              "delta_h_str_par_h.ref.del_i" = delta_h_str_par_h.ref.del_i,
+#              ###"delta_h_str_par_h.foc.del_i" = delta_h_str_par_h.foc.del_i,
+#              "store_str" = store_str, "store_par" = store_par,
+#              "s_p_ref" = s_p_ref, "s_p_foc" = s_p_foc, 
+#              ###"acai_p" = acai_p, "h_acai_s_p" = h_acai_s_p, 
+#              ### "h_acai_p" = h_acai_p, "delta_h_s_p_acai" = delta_h_s_p_acai, 
+#              ###  "delta_h_R_Ef" = delta_h_R_Ef, 
+#              ###  "return_items" = return_items
+#              functioncall = functioncall
+# )
+
+###vlist <- format_item_del(n_i, l = vars)
+
+# Declare classes
+###  class(vlist$store_par) <- class(vlist$store_str) <-  c("PartInvList", "PartInv")
+###  class(vlist$h_s_p_list_ref) <- class(vlist$h_s_p_list_foc) <-  
+###    c("PartInvList", "PartInv", "PartInvGroups")
+
+#  vlist <- list("delta_h_str_par_h.ref.del_i" = delta_h_str_par_h.ref.del_i, 
+#                "delta_h_str_par_h.foc.del_i" = delta_h_str_par_h.foc.del_i)#TEMP
+# list(
+#   # "ACAI" = vlist$acai_p,
+#   # "h ACAI (deletion)" = vlist$h_acai_p,
+#   # "h ACAI SFI-PFI" = vlist$h_acai_s_p,
+#   # "delta h ACAI SFI-PFI (deletion)" = vlist$delta_h_s_p_acai,
+#   # "AI Ratio" = vlist$AI_ratios,
+#   # "h CAI Ref-EF" = vlist$h_R_Ef,
+#   # "delta h CAI Ref-EF (deletion)" = vlist$delta_h_R_Ef,
+#   "delta h (impact of deleting item i)" = 
+#     list("referenceGroup" = delta_h_str_par_h.ref.del_i,
+#          "focalGroup(s)" = delta_h_str_par_h.foc.del_i)#,
+#   # "h SFI-PFI by groups" = list("reference" = vlist$h_s_p_list_ref, 
+#   #                              "focal" = vlist$h_s_p_list_foc),
+#   # "PartInv" = list("strict" = vlist$store_str, "partial" = vlist$store_par),
+#   # "return_items" = return_items
+# )
+###class(out) <- "itemdeletion"
+
 #"h_s_p_ref" = h_s_p_ref, #"h_s_p_foc" = h_s_p_foc, 
 #delta_h(h_s_p_ref[1], h_s_p_ref[i])
-#delta_h(s_p_foc_list[[1]], x))#delta_h(h_s_p_foc[1], h_s_p_foc[i])
+#delta_h(s_p_foc[[1]], x))#delta_h(h_s_p_foc[1], h_s_p_foc[i])
 #h_s_p_ref <- h_s_p_foc <- list()#h_s_p_ref[[1]] <- acc$Reference#h_s_p_foc[[1]] <- acc$Focal# h_s_p_ref[1] <- acc$Reference$h; h_s_p_foc[1] <- acc$Focal$h
-# h_s_p_ref[i] <- s_p_ref_list[[i]]$h # h_s_p_foc[i] <- s_p_foc_list[[i]]$h # h_s_p_ref[[i]] <- s_p_ref_list[[i]]#  h_s_p_foc[[i]] <- s_p_foc_list[[i]]
+# h_s_p_ref[i] <- s_p_ref[[i]]$h # h_s_p_foc[i] <- s_p_foc[[i]]$h # h_s_p_ref[[i]] <- s_p_ref[[i]]#  h_s_p_foc[[i]] <- s_p_foc[[i]]
 #"h CAI SFI-PFI" = list("ref"= vlist$h_s_p_ref,  #"foc" = vlist$h_s_p_foc),
