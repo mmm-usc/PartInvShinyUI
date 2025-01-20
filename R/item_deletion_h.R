@@ -62,6 +62,7 @@
 #'        onto calls to PartInv.
 #' @param labels A character vector with two elements to label the reference
 #'         and the focal group on the graph.
+#' @param digits Number of digits for rounding. 3 by default.
 #' @param ... Other arguments passed to the \code{\link[graphics]{contour}}
 #'     function.
 #' @return An object of class `itemdeletion` containing 13 elements.
@@ -178,7 +179,7 @@ item_deletion_h <- function(cfa_fit = NULL,
                             psi_r = NULL, psi_f = psi_r,
                             lambda_r = NULL, lambda_f = lambda_r,
                             nu_r = NULL, nu_f = nu_r,
-                            Theta_r = NULL, Theta_f = Theta_r,
+                            Theta_r = NULL, Theta_f = Theta_r, digits = 3,
                             ...) {
   functioncall <- match.call()
   CAIs <- c("TP", "FP", "TN", "FN", "PS", "SR", "SE", "SP")
@@ -229,24 +230,18 @@ item_deletion_h <- function(cfa_fit = NULL,
     final_set <- paste0("del_i", delete_items)
   }
   
-  #delta_h_s_p_foc_del_i <- 
-    #create_list_of_dfs(ls_len = num_g - 1, ncol = n_i, nrow = 8, 
-    #                   df_cn = return_labels, df_rn = CAIs) 
   acai_p <- acai_s <- h_acai_s_p <- h_R_Ef <- 
     create_list_of_dfs(ls_len = num_g - 1, ncol = 8, nrow = n_i + 1, 
                        df_cn = CAIs, df_rn = c("Full", return_labels))
   h_acai_p <- delta_h_R_Ef <- delta_h_acai_s_p <- 
     create_list_of_dfs(ls_len = num_g - 1, ncol = 8, nrow = n_i, df_cn = CAIs,
                        df_rn = return_labels) 
-  delta_h_s_p <-  create_list_of_dfs(ls_len = num_g, ncol = 8, nrow = n_i, df_cn = CAIs,
-                                     df_rn = return_labels) 
-  h_s_p <- create_list_of_dfs(ls_len = num_g, ncol = 8, nrow = n_i + 1 , df_cn = CAIs,
-                                  df_rn = c("Full", return_labels))
+  delta_h_s_p <-  create_list_of_dfs(ls_len = num_g, ncol = 8, nrow = n_i, 
+                                     df_cn = CAIs, df_rn = return_labels) 
+  h_s_p <- create_list_of_dfs(ls_len = num_g, ncol = 8, nrow = n_i + 1 , 
+                              df_cn = CAIs, df_rn = c("Full", return_labels))
   
-  store_str <- store_par <- s_p_ref <- s_p_foc <- vector(mode = "list", n_i + 1)
-  delta_h_s_p_R_del_i <- as.data.frame(matrix(nrow = 8, ncol = n_i), 
-                                               row.names = CAIs)
-  
+  store_str <- store_par <- vector(mode = "list", n_i + 1)
   AI_ratios <- as.data.frame(matrix(ncol = num_g, nrow = n_i + 1))
 
   out_par <- c("propsel", "cutpt_xi", "cutpt_z", "summary", "bivar_data", 
@@ -266,20 +261,12 @@ item_deletion_h <- function(cfa_fit = NULL,
 
   # h: strict vs. partial invariance (full item set) for all groups
   temp <- as.data.frame(Map(cohens_h, 
-                    store_str[[1]]$summary_mi, 
-                    store_par[[1]]$summary[1:num_g]))
+                            store_str[[1]]$summary_mi, 
+                            store_par[[1]]$summary[1:num_g]))
   h_s_p <- update_rows_in_lists_of_dfs(h_s_p, temp, ind = 1)
-    #h_s_p.full <- str_par_h(store_str[[1]]$summary_mi,
-                 #         store_par[[1]]$summary, num_g = num_g)
-  
-  
-  # s_p_ref is a list of length n_i dataframes, for the reference group. each df contains strict, partial, and h columns for a given item set. Here, full.
- # s_p_ref[[1]] <- h_s_p[[1]][1,]#h_s_p.full$Reference
-  # s_p_foc is a list of length n_i lists, each element is a list of dfs. the outer list is the item set, the inner list is the focal groups; e.g., s_p_foc[[1]][[1]] == s_p_foc[[1]][["Focal_1"]], which is the CAI and h for the full item set for the Focal 1 group.
- # s_p_foc[[1]] <- h_s_p.full[2:num_g]
  
-  temp <- lapply(store_par[[1]]$summary[,(num_g + 1):(2 * num_g - 1)],
-                 FUN = function(x) cohens_h(store_par[[1]]$summary[,1], x))
+  temp <- list(apply(as.data.frame(store_par[[1]]$summary[,(num_g + 1):(2 * num_g - 1)]),MARGIN =2,
+              FUN = function(x) cohens_h(store_par[[1]]$summary[,1], x)))
   h_R_Ef <- update_rows_in_lists_of_dfs(h_R_Ef, temp, ind = 1)
 
   # Compute aggregate CAI on the full item set
@@ -302,11 +289,10 @@ item_deletion_h <- function(cfa_fit = NULL,
   # If no cutoff was provided, set propsel based on PartInv output with all items
   if(is.null(delete_one_cutoff)) {
     propsel_p <- store_par[[1]]$propsel
-    propsel_s <- store_str[[1]]$propsel
     cut_z <- NULL
   } else {
     cut_z <- delete_one_cutoff
-    propsel_p <- NULL; propsel_s <- NULL
+    propsel_p <- NULL
   }
   
   # Item deletion scenarios ####
@@ -334,19 +320,10 @@ item_deletion_h <- function(cfa_fit = NULL,
                     s_del1 = store_str[[i]]$summary_mi, num_g = num_g)
     
     # h: strict vs. partial invariance (delete-one item set) for all groups
-    # h_s_p.del_i <- str_par_h(store_str[[i]]$summary_mi, 
-    #                          store_par[[i]]$summary, num_g = num_g)
-    # 
     temp <- as.data.frame(Map(cohens_h, 
                               store_str[[i]]$summary_mi, 
                               store_par[[i]]$summary[1:num_g]))
     h_s_p <- update_rows_in_lists_of_dfs(h_s_p, temp, ind = i)
-    # h_s_p.del_i <- as.data.frame(Map(cohens_h, 
-    #                   store_str[[i]]$summary_mi, 
-    #                   store_par[[i]]$summary[1:num_g]))
-    
-   # s_p_ref[[i]] <- h_s_p.del_i$Reference
-   # s_p_foc[[i]] <- h_s_p.del_i[2:num_g]
 
     # delta h: comparing CAI under strict vs. partial invariance when item i is 
     # deleted (i.e. the change in h_s_p_ref and h_s_p_foc) for all groups
@@ -355,26 +332,10 @@ item_deletion_h <- function(cfa_fit = NULL,
       df
     }, delta_h_s_p, h_s_p)
     
-    
-    
-    
-   # delta_h_s_p_R_del_i[, i - 1] <- delta_h(
-    #   as.data.frame(s_p_ref[[1]])$h, 
-    #   as.data.frame(s_p_ref[[i]])$h)
-    # 
-    # focal_h.full <- lapply(s_p_foc[[1]], FUN = function(x) as.data.frame(x)$h)
-    # focal_h.del_i <- lapply(s_p_foc[[i]], FUN = function(x) as.data.frame(x)$h)
-    # 
-    # for (k in seq_along(focal_h.del_i)) {
-    #   delta_h_s_p_foc_del_i[[k]][,return_labels[i - 1]] <- 
-    #     delta_h(focal_h.full[[k]], focal_h.del_i[[k]])
-    # } 
-    
     # h: difference in CAI under partial invariance for the ref group vs. for 
     # the expected CAI for the focal group with the full item set
-    temp <- lapply(
-      store_par[[i]]$summary[,(num_g + 1):(2 * num_g - 1)],
-      FUN = function(x) cohens_h(store_par[[i]]$summary[,1], x))
+    temp <- list(apply(as.data.frame(store_par[[i]]$summary[,(num_g + 1):(2 * num_g - 1)]),MARGIN =2,
+               FUN = function(x) cohens_h(store_par[[i]]$summary[,1], x)))
     h_R_Ef <- update_rows_in_lists_of_dfs(h_R_Ef, temp, ind = i)
     
     # change in h_R_Ef_del when item i is deleted (under partial invariance)
@@ -410,7 +371,6 @@ item_deletion_h <- function(cfa_fit = NULL,
    AI_ratios[i,] <- as.vector(c(1, store_par[[i]]$ai_ratio), mode = "double")
   }
 
-
   rownames(AI_ratios) <- c("Full", return_labels)
   
   
@@ -424,6 +384,8 @@ item_deletion_h <- function(cfa_fit = NULL,
   delta_h_R_Ef <- lapply(delta_h_R_Ef, FUN = function(x) x[final_set,])
   delta_h_s_p <- lapply(delta_h_s_p, FUN = function(x) x[final_set,])
   
+  # not returned? or not printed by the class method? h_acai_s_p, delta_h_acai_s_p, delta_h_s_p 
+  
   out <- list(
     "AI_ratios" = AI_ratios,
     "ACAI" = acai_p,
@@ -436,6 +398,14 @@ item_deletion_h <- function(cfa_fit = NULL,
    #   list("referenceGroup" = delta_h_s_p_R_del_i,
    #        "focalGroup(s)" = delta_h_s_p_foc_del_i)
     )
+  
+  # apply rounding
+  out <- lapply(out, function(inner_list) {
+    lapply(inner_list, function(df) {
+      round(df, digits)
+    })
+  })
+  
   
   ###class(out) <- "itemdeletion"
   return(out)
