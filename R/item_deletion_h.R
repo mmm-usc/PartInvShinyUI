@@ -264,38 +264,20 @@ item_deletion_h <- function(cfa_fit = NULL,
   # s_p_foc is a list of length n_i lists, each element is a list of dfs. the outer list is the item set, the inner list is the focal groups; e.g., s_p_foc[[1]][[1]] == s_p_foc[[1]][["Focal_1"]], which is the CAI and h for the full item set for the Focal 1 group.
   s_p_foc[[1]] <- h_s_p.full[2:num_g]
  
-  
   temp_h_R_Ef<- lapply(
     store_par[[1]]$summary[,(num_g + 1):(2 * num_g - 1)],
     FUN = function(x) cohens_h(store_par[[1]]$summary[,1], x))      #cohens_h(partial$Reference, partial$`E_R(Focal)`)
 
-  h_R_Ef <- Map(function(df, vec) {
-    df[1,] <- vec
-    df
-  }, h_R_Ef, temp_h_R_Ef)
-  
-  update_rows_in_lists_of_dfs <- function(l1, l2) {
-    Map(function(df, df2) {
-      df[1,] <- df2
-      df
-    }, l1, l2)
-  }
-  
+
+  h_R_Ef <- update_rows_in_lists_of_dfs(h_R_Ef, temp_h_R_Ef, ind = 1)
+
   # Compute aggregate CAI on the full item set
   temp_acai_p <- get_aggregate_CAI(pmix, store_par[[1]]$summary, inv_cond = "partial")
-  acai_p <- Map(function(df, vec) {
-    df[1,] <- vec
-    df
-  }, acai_p, temp_acai_p)
-  
-  
+  acai_p <- update_rows_in_lists_of_dfs(acai_p, temp_acai_p, ind = 1)
   
   temp_acai_s <- get_aggregate_CAI(pmix, store_str[[1]]$summary_mi, inv_cond = "strict")
-  acai_s <- Map(function(df, vec) {
-    df[1,] <- vec
-    df
-  }, acai_s, temp_acai_s)
-  
+  acai_s <- update_rows_in_lists_of_dfs(acai_s, temp_acai_s, ind = 1)
+
   # compute cohen's h for the difference between the strict and partial inv. conditions
   # (on the first row of the data frames in each element of the two lists)
   temp_h_acai_s_p <- Map(function(df_s, df_p) {
@@ -303,10 +285,7 @@ item_deletion_h <- function(cfa_fit = NULL,
   }, acai_s, acai_p)
     
   # store each vector in the first row of the corresponding dataframe in h_acai_s_p
-  h_acai_s_p <- Map(function(df, vec) {
-    df[1,] <- vec
-    df
-  }, h_acai_s_p, temp_h_acai_s_p)
+  h_acai_s_p <- update_rows_in_lists_of_dfs(h_acai_s_p, temp_h_acai_s_p, ind = 1)
   
   # h: difference between strict and partial invariance for aggregate CAI
    AI_ratios[1,] <- as.vector(c(1, store_par[[1]]$ai_ratio), mode = "double")
@@ -366,23 +345,14 @@ item_deletion_h <- function(cfa_fit = NULL,
     
     # h: difference in CAI under partial invariance for the ref group vs. for 
     # the expected CAI for the focal group with the full item set
-    ### h_R_Ef[i] <- cohens_h(store_par[[i]]$summary$Reference, 
-    ###                       store_par[[i]]$summary$`E_R(Focal)`)
-
     temp_h_R_Ef <- lapply(
       store_par[[i]]$summary[,(num_g + 1):(2 * num_g - 1)],
       FUN = function(x) cohens_h(store_par[[i]]$summary[,1], x))      #cohens_h(partial$Reference, partial$`E_R(Focal)`)
-    
-    h_R_Ef <- Map(function(df, vec) {
-      df[i,] <- vec
-      df
-    }, h_R_Ef, temp_h_R_Ef)
+    h_R_Ef <- update_rows_in_lists_of_dfs(h_R_Ef, temp_h_R_Ef, ind = i)
     
     # delta_h: change in h comparing CAI under partial invariance for the ref
     # group vs. for the expected CAI for the focal group (i.e. the change in
     # h_R_Ef_del) when item i is deleted
-    ### delta_h_R_Ef[i-1] <- delta_h(h_R_Ef[1], h_R_Ef[i])
-    
     delta_h_R_Ef <- Map(function(df, df2) {
       df[i-1,] <- delta_h(df2[1,], df2[i,])
       df
@@ -390,15 +360,11 @@ item_deletion_h <- function(cfa_fit = NULL,
     
     # Weight the aggregate SR, SE, SP indices under partial and strict invariance
     temp_acai_p <- get_aggregate_CAI(pmix, store_par[[i]]$summary, inv_cond = "partial")
-    acai_p <- Map(function(df, vec) {
-      df[i, ] <- vec
-      df
-    }, acai_p, temp_acai_p)
+    acai_p <- update_rows_in_lists_of_dfs(acai_p, temp_acai_p, ind = i)
+    
     temp_acai_s <- get_aggregate_CAI(pmix, store_str[[i]]$summary_mi, inv_cond = "strict")
-    acai_s <- Map(function(df, vec) {
-      df[i, ] <- vec
-      df
-    }, acai_s, temp_acai_s)
+    acai_s <- update_rows_in_lists_of_dfs(acai_s, temp_acai_s, ind = i)
+    
     # compute cohen's h for the difference between the strict and partial inv. conditions
     # (on the i-th row of the data frames in each element of the two lists)
     temp_h_acai_s_p <- Map(function(df_s, df_p) {
@@ -406,21 +372,15 @@ item_deletion_h <- function(cfa_fit = NULL,
     }, acai_s, acai_p)
 
     # store each vector in the i-th row of the corresponding dataframe in h_acai_s_p
-    h_acai_s_p <- Map(function(df, temp) {
-      df[i, ] <- temp
-      df 
-    }, h_acai_s_p, temp_h_acai_s_p)
+    h_acai_s_p <- update_rows_in_lists_of_dfs(h_acai_s_p, temp_h_acai_s_p, ind = i)
     
     # h: change in aggregate CAI when an item is deleted under partial invariance
    temp_h_acai_p <- lapply(acai_p, function(df) cohens_h(df[1, ], df[i, ]))
-   h_acai_p <- Map(function(df, vec) {
-     df[i - 1, ] <- vec
-     df
-   }, h_acai_p, temp_h_acai_p)                   
+   h_acai_p <- update_rows_in_lists_of_dfs(h_acai_p, temp_h_acai_p, ind = i - 1) 
     
     ### delta_h_s_p_acai[i - 1] <- delta_h(h_acai_s_p[1], h_acai_s_p[i])
 
-      AI_ratios[i,] <- as.vector(c(1, store_par[[i]]$ai_ratio), mode = "double")
+   AI_ratios[i,] <- as.vector(c(1, store_par[[i]]$ai_ratio), mode = "double")
   }
 
   colnames(delta_h_s_p.ref.del_i) <- return_labels

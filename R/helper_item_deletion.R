@@ -6,6 +6,13 @@ create_list_of_dfs <- function(ls_len, ncol, nrow, df_cn, df_rn) {
   })
 }
 
+update_rows_in_lists_of_dfs <- function(l1, l2, ind) {
+  Map(function(df, df2) {
+    df[ind,] <- df2
+    df
+  }, l1, l2)
+}
+
 
 # Function that performs formatting for various variables to be returned in
 # item_deletion_h
