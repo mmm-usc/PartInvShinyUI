@@ -6,18 +6,18 @@
 #'
 #' @description
 #' \code{item_deletion_h} computes effect size indices that quantify the impact
-#'  of (and changes in the impact of) measurement bias on classification accuracy
-#'  indices (CAI) such as TP and SE if an item is dropped vs. included in analyses.
+#'  of (and changes in the impact of) measurement bias on CAI if an item is 
+#'  dropped vs. retained.
 #'  Comparisons are made between CAI computed for the reference group and
 #'  expected CAI computed for the focal group; between CAI computed under strict
-#'  factorial invariance (SFI) vs. CAI computed under partial factorial
-#'  invariance (PFI); and between aggregate CAI computed for item subsets.
+#'  factorial invariance (SFI) vs. partial factorial invariance (PFI); and 
+#'  aggregate CAI computed for item subsets.
 #' @param cfa_fit CFA model output from lavaan.
 #' @param propsel Proportion of selection. If missing, computed using `cut_z`.
-#' @param cut_z Pre-specified cutoff score on the observed composite. This
-#'        argument is ignored when `propsel` has an input.
+#' @param cut_z Pre-specified cutoff score on the observed composite. Ignored 
+#'     when `propsel` has an input.
 #' @param weights_item A vector of item weights.
-#' @param weights_latent A  vector of latent factor weights.
+#' @param weights_latent A vector of latent factor weights.
 #' @param alpha A list of length `g` containing `1 x d` latent factor mean
 #'     vectors where `g` is the number of groups and `d` is the number of latent
 #'     dimensions. The first element is assumed to belong to the reference group.
@@ -27,82 +27,73 @@
 #'     to the reference group.
 #' @param lambda A list of length `g` containing `n_i x d` factor loading matrices
 #'     where `g` is the number of groups, `d` is the number of latent dimensions,
-#'     and `n` is the number of items in the scale. The first element is assumed
+#'     and `n` is the number of items . The first element is assumed
 #'     to belong to the reference group.
 #' @param nu A list of length `g` containing `1 x n_i` measurement intercept
-#'     vectors where `g` is the number of groups and `n_i` is the number of items
-#'     in the scale. The first element is assumed to belong to the reference
-#'     group.
+#'     vectors where `g` is the number of groups and `n_i` is the number of 
+#'     items. The first element is assumed to belong to the reference group.
 #' @param theta A list of length `g` containing `1 x n_i` vectors or `n_i x n_i`
 #'     matrices of unique factor variances and covariances, where `g` is the
-#'     number of groups and `n_i` is the number of items in the scale. The first
+#'     number of groups and `n_i` is the number of items . The first
 #'     element is assumed to belong to the reference group.
 #' @param alpha_r,alpha_f,nu_r,nu_f,Theta_r,Theta_f,psi_r,psi_f,lambda_r,lambda_f,pmix_ref
-#'        Deprecated; included only for backward compatibility. When comparing two
-#'        groups, parameters with the '_r' suffix refer to the reference group while
-#'        parameters with the '_f' suffix refer to the focal group.
+#'     Deprecated; included for backward compatibility. With two groups, '_r' 
+#'     and '_f' suffixes refer to the reference group and the focal group.
 #' @param pmix List of length `g` containing the mixing proportions of each
-#'     group. If `NULL`, defaults to `1/g` for each group (i.e., the populations
-#'     have equal size).
+#'     group. If `NULL`, defaults to `1/g` for each group (i.e., equal sizes).
 #' @param plot_contour Logical; whether the contour of the two populations
-#'        should be plotted; default to `TRUE`.
-#' @param n_dim Number of dimensions, 1 by default. If the user does not supply
-#'        a different value, proceeds with the assumption that the scale is
-#'        unidimensional.
-#' @param n_i_per_dim A vector containing the number of items in each
-#'        dimension; `NULL` by default. If the user provides a value for `n_dim`
-#'        that is \eqn{> 1} but leaves \code{n_i_per_dim = NULL}, assumes that
-#'        the subscales have an equal number of items.
-#' @param delete_items A vector; default to `NULL`. If the user does not
-#'        input a vector of items, only the items determined to contain bias will
-#'        be considered for deletion.
-#' @param delete_one_cutoff (optional) User-specified cutoff to use in
-#'        delete-one scenarios. `NULL` by default; if `NULL`, proportion
-#'        selected under SFI and PFI when the full item set is used is passed
-#'        onto calls to PartInv.
+#'     should be plotted; default to `TRUE`.
+#' @param n_dim Number of dimensions, 1 by default.
+#' @param n_i_per_dim A vector containing the number of items per dimension;
+#'     `NULL` by default. If `n_dim` \eqn{> 1} and \code{n_i_per_dim = NULL}, 
+#'      subscales are assumed to have an equal number of items.
+#' @param delete_items A vector; default to `NULL`. If `NULL`, only items 
+#'     determined to contain bias will be considered for deletion.
+#' @param delete_one_cutoff User-specified cutoff to use in delete-one scenarios.
+#'     `NULL` by default; if `NULL`, PS on the full item set will be used.
 #' @param labels A character vector with two elements to label the reference
-#'         and the focal group on the graph.
+#'     and the focal group on the graph.
+#' @param plot_contour Logical; whether the contour of the populations should be
+#'     plotted; `TRUE` by default.
 #' @param digits Number of digits for rounding. 3 by default.
-#' @param ... Other arguments passed to the \code{\link[graphics]{contour}}
-#'     function.
+#' @param ... Other arguments for \code{\link[graphics]{contour}}.
 #' @return An object of class `itemdeletion` containing 13 elements.
-#'        \item{ACAI}{A matrix that stores aggregate PS, SR, SE, SP computed for
-#'        the full set of items and item subsets excluding biased or user specified
-#'        items under PFI.}
-#'        \item{h ACAI (deletion)}{A matrix that stores Cohen's h computed for
-#'        the impact of deleting each item considered in the `ACAI` table.}
-#'        \item{h ACAI SFI-PFI}{A matrix that stores Cohen's h values
-#'        quantifying the discrepancy between ACAI under SFI vs. ACAI under PFI.}
-#'        \item{delta h ACAI SFI-PFI (deletion)}{A matrix that stores delta h
-#'        values quantifying the impact of deleting an item on the discrepancy
-#'        between ACAI under SFI vs. ACAI under PFI for subsets of items.}
-#'        \item{AI Ratio}{A matrix storing Adverse Impact Ratio values computed
-#'        for item subsets by invariance condition.}
-#'        \item{h CAI Ref-EF}{A matrix that stores Cohen's h values quantifying
-#'        the discrepancy between CAI computed for the reference group and the
-#'        expected CAI computed for the focal group if it matched the
-#'        distribution of the reference group (Efocal), under PFI for subsets of
-#'        items.}
-#'        \item{delta h CAI Ref-EF (deletion)}{A matrix that stores delta h
-#'        values quantifying the impact of deleting an item on the discrepancy
-#'        between CAI of reference vs. Efocal groups under PFI.}
-#'        \item{h CAI SFI-PFI}{A list containing two items, `ref` and `foc`
-#'        which are matrices storing Cohen's h values quantifying the
-#'        discrepancy between CAI under SFI vs. PFI for the reference group and
-#'        the focal group respectively, for subsets of items.}
-#'        \item{delta h SFI-PFI (deletion)}{A list containing two items,
-#'        `ref` and `foc` which are matrices storing delta h values quantifying
-#'        the impact of deleting an item on the discrepancy between CAI under
-#'        SFI vs. PFI for the reference group and the focal group respectively,
-#'        for subsets of items.}
-#'        \item{h SFI-PFI by groups}{Two lists (`reference` and `focal`). The lists
-#'        contain tables for each item deletion scenario displaying raw CAI
-#'        under SFI, under PFI, and the Cohen's h value associated with the
-#'        difference between the invariance condition.}
-#'        \item{PartInv}{Two lists (`strict` and `partial`), each containing
-#'        PartInv() outputs.}
-#'        \item{return_items}{A vector containing the items that will be considered
-#'        for deletion.}
+#'     \item{ACAI}{A matrix that stores aggregate PS, SR, SE, SP computed for
+#'     the full set of items and item subsets excluding biased or user specified
+#'     items under PFI.}
+#'     \item{h ACAI (deletion)}{A matrix that stores Cohen's h computed for
+#'     the impact of deleting each item considered in the `ACAI` table.}
+#'     \item{h ACAI SFI-PFI}{A matrix that stores Cohen's h values
+#'   quantifying the discrepancy between ACAI under SFI vs. ACAI under PFI.}
+#'     \item{delta h ACAI SFI-PFI (deletion)}{A matrix that stores delta h
+#'     values quantifying the impact of deleting an item on the discrepancy
+#'     between ACAI under SFI vs. ACAI under PFI for subsets of items.}
+#'     \item{AI Ratio}{A matrix storing Adverse Impact Ratio values computed
+#'     for item subsets by invariance condition.}
+#'     \item{h CAI Ref-EF}{A matrix that stores Cohen's h values quantifying
+#'     the discrepancy between CAI computed for the reference group and the
+#'     expected CAI computed for the focal group if it matched the
+#'     distribution of the reference group (Efocal), under PFI for subsets of
+#'     items.}
+#'     \item{delta h CAI Ref-EF (deletion)}{A matrix that stores delta h
+#'     values quantifying the impact of deleting an item on the discrepancy
+#'     between CAI of reference vs. Efocal groups under PFI.}
+#'     \item{h CAI SFI-PFI}{A list containing two items, `ref` and `foc`
+#'     which are matrices storing Cohen's h values quantifying the
+#'     discrepancy between CAI under SFI vs. PFI for the reference group and
+#'     the focal group respectively, for subsets of items.}
+#'     \item{delta h SFI-PFI (deletion)}{A list containing two items,
+#'     `ref` and `foc` which are matrices storing delta h values quantifying
+#'     the impact of deleting an item on the discrepancy between CAI under
+#'     SFI vs. PFI for the reference group and the focal group respectively,
+#'     for subsets of items.}
+#'     \item{h SFI-PFI by groups}{Two lists (`reference` and `focal`). The lists
+#'     contain tables for each item deletion scenario displaying raw CAI
+#'     under SFI, under PFI, and the Cohen's h value associated with the
+#'     difference between the invariance condition.}
+#'     \item{PartInv}{Two lists (`strict` and `partial`), each containing
+#'     PartInv() outputs.}
+#'     \item{biased_items}{A vector with items considered for deletion.}
 #' @examples
 #' # Multidimensional example
 #' lambda_matrix <- matrix(0, nrow = 5, ncol = 2)
@@ -180,19 +171,19 @@ item_deletion_h <- function(cfa_fit = NULL,
                             nu_r = NULL, nu_f = nu_r,
                             Theta_r = NULL, Theta_f = Theta_r, digits = 3,
                             ...) {
-  functioncall <- match.call()
+  functioncall <- match.call()            
   CAIs <- c("TP", "FP", "TN", "FN", "PS", "SR", "SE", "SP")
   
   # for backward compatibility with different input names ####
   # pl: parameter list after adjustments
-  pl <- unbiasr:::prep_params(
+  pl <- prep_params(
     cfa_fit, propsel, cut_z, weights_item, weights_latent, alpha, psi, lambda, 
     theta, nu, pmix, pmix_ref, plot_contour, labels, n_dim = n_dim, 
     n_i_per_dim = n_i_per_dim, delete_items = delete_items, 
     delete_one_cutoff = delete_one_cutoff, alpha_r, alpha_f,
     phi_r = NULL, phi_f = NULL, psi_r, psi_f, lambda_r, lambda_f, tau_r = NULL, 
     tau_f = NULL, kappa_r = NULL, kappa_f = NULL, nu_r, nu_f, Theta_r, Theta_f, 
-    reference = NULL, custom_colors)
+    reference = NULL, custom_colors = NULL)
   
   alpha <- pl$alpha
   psi <- pl$psi
@@ -208,37 +199,36 @@ item_deletion_h <- function(cfa_fit = NULL,
 
   #####
   # # Determine which set of items will be returned
-  # return_items <- c()
-  # if(is.null(delete_items)) { # default: return only the biased items.
-  #     return_items <- determine_biased_items(lambda, nu, theta)
-  #     return_items <-  setdiff(return_items, which(weights_item == 0))
-  # } else {
-  #   if (!all(delete_items == floor(delete_items))) {
-  #     stop("'delete_items' should only contain integers corresponding
-  #            to item indices.")}
-  #   if (!all(delete_items < n_i + 1)) {
-  #     stop("'delete_items' cannot take integers > the scale length.")}
-  #   return_items <- delete_items
-  # }
-  # return items labels
-  return_labels <- paste0("del_i", 1:n_i) # paste0("del_i", return_items)
+  biased_items <- c()
+  if (is.null(delete_items)) { # default: return only the biased items.
+      biased_items <- determine_biased_items(lambda, nu, theta)
+      biased_items <-  setdiff(biased_items, which(weights_item == 0))
+  } else {
+    if (!all(delete_items == floor(delete_items))) {
+      stop("'delete_items' should only contain integers corresponding to item indices.")}
+    if (!all(delete_items < n_i + 1)) {
+      stop("'delete_items' cannot take integers > the scale length.")}
+    biased_items <- delete_items
+  }
+  # all the labels
+  del_i_labs <- paste0("del_i", 1:n_i) # paste0("del_i", biased_items)
   #####
   if (is.null(delete_items)) {
-    final_set <- return_labels
+    final_set <- paste0("del_i", biased_items)#del_i_labs
   } else {
     final_set <- paste0("del_i", delete_items)
   }
   
   acai_p <- acai_s <- h_acai_s_p <- h_R_Ef <- 
     create_list_of_dfs(ls_len = num_g - 1, ncol = 8, nrow = n_i + 1, 
-                       df_cn = CAIs, df_rn = c("Full", return_labels))
+                       df_cn = CAIs, df_rn = c("Full", del_i_labs))
   h_acai_p <- delta_h_R_Ef <- delta_h_acai_s_p <- 
     create_list_of_dfs(ls_len = num_g - 1, ncol = 8, nrow = n_i, df_cn = CAIs,
-                       df_rn = return_labels) 
+                       df_rn = del_i_labs) 
   delta_h_s_p <-  create_list_of_dfs(ls_len = num_g, ncol = 8, nrow = n_i, 
-                                     df_cn = CAIs, df_rn = return_labels) 
+                                     df_cn = CAIs, df_rn = del_i_labs) 
   h_s_p <- create_list_of_dfs(ls_len = num_g, ncol = 8, nrow = n_i + 1 , 
-                              df_cn = CAIs, df_rn = c("Full", return_labels))
+                              df_cn = CAIs, df_rn = c("Full", del_i_labs))
   
   store_str <- store_par <- vector(mode = "list", n_i + 1)
   AI_ratios <- as.data.frame(matrix(ncol = num_g, nrow = n_i + 1))
@@ -376,7 +366,7 @@ item_deletion_h <- function(cfa_fit = NULL,
    AI_ratios[i,] <- as.vector(c(1, store_par[[i]]$ai_ratio), mode = "double")
   }
 
-  rownames(AI_ratios) <- c("Full", return_labels)
+  rownames(AI_ratios) <- c("Full", del_i_labs)
   
   
   # get the subset of items the user requested

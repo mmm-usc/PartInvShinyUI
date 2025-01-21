@@ -3,8 +3,7 @@
 \name{PartInv}
 \alias{PartInv}
 \alias{PartInvMulti_we}
-\title{Evaluating selection accuracy for two or more groups based on the MCAA
-Framework}
+\title{Classification Accuracy Analysis with MCAA}
 \usage{
 PartInv(
   cfa_fit = NULL,
@@ -50,8 +49,8 @@ PartInvMulti_we(...)
 
 \item{propsel}{Proportion of selection. If missing, computed using \code{cut_z}.}
 
-\item{cut_z}{Pre-specified cutoff score on the observed composite. This
-argument is ignored when \code{propsel} has input.}
+\item{cut_z}{Pre-specified cutoff score on the observed composite. Ignored
+when \code{propsel} has input.}
 
 \item{weights_item}{A vector of item weights.}
 
@@ -68,22 +67,21 @@ to the reference group.}
 
 \item{lambda}{A list of length \code{g} containing \verb{n x d} factor loading matrices
 where \code{g} is the number of groups, \code{d} is the number of latent dimensions,
-and \code{n} is the number of items in the scale. The first element is assumed
+and \code{n} is the number of items. The first element is assumed
 to belong to the reference group.}
 
 \item{theta}{A list of length \code{g} containing \verb{1 x n} vectors or \verb{n x n}
 matrices of unique factor variances and covariances, where \code{g} is the
-number of groups and \code{n} is the number of items in the scale. The first
+number of groups and \code{n} is the number of items. The first
 element is assumed to belong to the reference group.}
 
 \item{nu}{A list of length \code{g} containing \verb{1 x n} measurement intercept
 vectors where \code{g} is the number of groups and \code{n} is the number of items
-in the scale. The first element is assumed to belong to the reference
+. The first element is assumed to belong to the reference
 group.}
 
 \item{pmix}{List of length \code{g} containing the mixing proportions of each
-group. If \code{NULL}, defaults to \code{1/g} for each group (i.e., the populations
-have equal size).}
+group. If \code{NULL}, defaults to \code{1/g} for each group (i.e., equal sizes).}
 
 \item{plot_contour}{Logical; whether the contour of the populations should be
 plotted; \code{TRUE} by default.}
@@ -94,22 +92,18 @@ strict invariance model, with common parameter values as weighted
 averages of the input values using \code{pmix}.}
 
 \item{labels}{A character vector with \code{g} elements to label the reference
-and focal groups on the plot, where \code{g} is the number of groups. If not
-provided, groups are labeled automatically as 'Reference' (for the first
-group) and 'Focal_1' through 'Focal_(g-1)', where \code{g} is the number of
-groups.}
+and focal groups on the plot, where \code{g} is the number of groups. If \code{NULL}
+groups are labeled as 'Reference' and 'Focal_1' through 'Focal_(g-1)'.}
 
-\item{custom_colors}{Optional argument for specifying colors}
+\item{custom_colors}{Optional argument for specifying colors.}
 
 \item{reference}{Optional argument for specifying the reference group.
 Currently only functional when cfa_fit is provided.}
 
-\item{alpha_r, alpha_f, nu_r, nu_f, Theta_r, Theta_f, psi_r, psi_f, lambda_r, lambda_f, phi_r, phi_f, tau_r, tau_f, kappa_r, kappa_f, pmix_ref}{Deprecated; included only for backward compatibility. When comparing two
-groups, parameters with the '_r' suffix refer to the reference group while
-parameters with the '_f' suffix refer to the focal group.}
+\item{alpha_r, alpha_f, nu_r, nu_f, Theta_r, Theta_f, psi_r, psi_f, lambda_r, lambda_f, phi_r, phi_f, tau_r, tau_f, kappa_r, kappa_f, pmix_ref}{Deprecated; included for backward compatibility. With two groups, '_r'
+and '_f' suffixes refer to the reference group and the focal group.}
 
-\item{...}{Other arguments passed to the \code{\link[graphics]{contour}}
-function.}
+\item{...}{Other arguments for \code{\link[graphics]{contour}}.}
 }
 \value{
 The output will be a list of six elements and a plot if
@@ -152,7 +146,7 @@ computed for each group under strict invariance.}
 }
 \description{
 \code{PartInv, PartInvMulti_we} evaluates partial measurement invariance
-using the multidimensional classification accuracy analysis
+using the multidimensional classification accuracy analysis framework
 (Lai & Zhang, 2022), which is an extension of Millsap & Kwok's (2004)
 approach.
 }

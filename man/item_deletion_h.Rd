@@ -42,12 +42,12 @@ item_deletion_h(
 
 \item{propsel}{Proportion of selection. If missing, computed using \code{cut_z}.}
 
-\item{cut_z}{Pre-specified cutoff score on the observed composite. This
-argument is ignored when \code{propsel} has an input.}
+\item{cut_z}{Pre-specified cutoff score on the observed composite. Ignored
+when \code{propsel} has an input.}
 
 \item{weights_item}{A vector of item weights.}
 
-\item{weights_latent}{A  vector of latent factor weights.}
+\item{weights_latent}{A vector of latent factor weights.}
 
 \item{alpha}{A list of length \code{g} containing \verb{1 x d} latent factor mean
 vectors where \code{g} is the number of groups and \code{d} is the number of latent
@@ -60,55 +60,45 @@ to the reference group.}
 
 \item{lambda}{A list of length \code{g} containing \verb{n_i x d} factor loading matrices
 where \code{g} is the number of groups, \code{d} is the number of latent dimensions,
-and \code{n} is the number of items in the scale. The first element is assumed
+and \code{n} is the number of items . The first element is assumed
 to belong to the reference group.}
 
 \item{theta}{A list of length \code{g} containing \verb{1 x n_i} vectors or \verb{n_i x n_i}
 matrices of unique factor variances and covariances, where \code{g} is the
-number of groups and \code{n_i} is the number of items in the scale. The first
+number of groups and \code{n_i} is the number of items . The first
 element is assumed to belong to the reference group.}
 
 \item{nu}{A list of length \code{g} containing \verb{1 x n_i} measurement intercept
-vectors where \code{g} is the number of groups and \code{n_i} is the number of items
-in the scale. The first element is assumed to belong to the reference
-group.}
+vectors where \code{g} is the number of groups and \code{n_i} is the number of
+items. The first element is assumed to belong to the reference group.}
 
 \item{pmix}{List of length \code{g} containing the mixing proportions of each
-group. If \code{NULL}, defaults to \code{1/g} for each group (i.e., the populations
-have equal size).}
+group. If \code{NULL}, defaults to \code{1/g} for each group (i.e., equal sizes).}
 
-\item{plot_contour}{Logical; whether the contour of the two populations
-should be plotted; default to \code{TRUE}.}
+\item{plot_contour}{Logical; whether the contour of the populations should be
+plotted; \code{TRUE} by default.}
 
 \item{labels}{A character vector with two elements to label the reference
 and the focal group on the graph.}
 
-\item{n_dim}{Number of dimensions, 1 by default. If the user does not supply
-a different value, proceeds with the assumption that the scale is
-unidimensional.}
+\item{n_dim}{Number of dimensions, 1 by default.}
 
-\item{n_i_per_dim}{A vector containing the number of items in each
-dimension; \code{NULL} by default. If the user provides a value for \code{n_dim}
-that is \eqn{> 1} but leaves \code{n_i_per_dim = NULL}, assumes that
-the subscales have an equal number of items.}
+\item{n_i_per_dim}{A vector containing the number of items per dimension;
+\code{NULL} by default. If \code{n_dim} \eqn{> 1} and \code{n_i_per_dim = NULL},
+subscales are assumed to have an equal number of items.}
 
-\item{delete_items}{A vector; default to \code{NULL}. If the user does not
-input a vector of items, only the items determined to contain bias will
-be considered for deletion.}
+\item{delete_items}{A vector; default to \code{NULL}. If \code{NULL}, only items
+determined to contain bias will be considered for deletion.}
 
-\item{delete_one_cutoff}{(optional) User-specified cutoff to use in
-delete-one scenarios. \code{NULL} by default; if \code{NULL}, proportion
-selected under SFI and PFI when the full item set is used is passed
-onto calls to PartInv.}
+\item{delete_one_cutoff}{User-specified cutoff to use in delete-one scenarios.
+\code{NULL} by default; if \code{NULL}, PS on the full item set will be used.}
 
-\item{alpha_r, alpha_f, nu_r, nu_f, Theta_r, Theta_f, psi_r, psi_f, lambda_r, lambda_f, pmix_ref}{Deprecated; included only for backward compatibility. When comparing two
-groups, parameters with the '_r' suffix refer to the reference group while
-parameters with the '_f' suffix refer to the focal group.}
+\item{alpha_r, alpha_f, nu_r, nu_f, Theta_r, Theta_f, psi_r, psi_f, lambda_r, lambda_f, pmix_ref}{Deprecated; included for backward compatibility. With two groups, '_r'
+and '_f' suffixes refer to the reference group and the focal group.}
 
 \item{digits}{Number of digits for rounding. 3 by default.}
 
-\item{...}{Other arguments passed to the \code{\link[graphics]{contour}}
-function.}
+\item{...}{Other arguments for \code{\link[graphics]{contour}}.}
 }
 \value{
 An object of class \code{itemdeletion} containing 13 elements.
@@ -147,17 +137,16 @@ under SFI, under PFI, and the Cohen's h value associated with the
 difference between the invariance condition.}
 \item{PartInv}{Two lists (\code{strict} and \code{partial}), each containing
 PartInv() outputs.}
-\item{return_items}{A vector containing the items that will be considered
-for deletion.}
+\item{biased_items}{A vector with items considered for deletion.}
 }
 \description{
 \code{item_deletion_h} computes effect size indices that quantify the impact
-of (and changes in the impact of) measurement bias on classification accuracy
-indices (CAI) such as TP and SE if an item is dropped vs. included in analyses.
+of (and changes in the impact of) measurement bias on CAI if an item is
+dropped vs. retained.
 Comparisons are made between CAI computed for the reference group and
 expected CAI computed for the focal group; between CAI computed under strict
-factorial invariance (SFI) vs. CAI computed under partial factorial
-invariance (PFI); and between aggregate CAI computed for item subsets.
+factorial invariance (SFI) vs. partial factorial invariance (PFI); and
+aggregate CAI computed for item subsets.
 }
 \examples{
 # Multidimensional example
@@ -203,7 +192,6 @@ fit <- cfa(HS.model, data = HS, group = "sex")
 item_deletion_h(cfa_fit = fit, propsel = .05)
 
 # Simulate random data to fit a multigroup cfa
-
 set.seed(7)  
 sim_m <-
   "f =~ c(1, .7, 1) * x1 + c(.8, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5

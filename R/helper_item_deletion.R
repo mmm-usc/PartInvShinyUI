@@ -47,11 +47,11 @@ format_item_del <- function(n_i, l) {
   h_s_p_list_foc <- list(outputlist = l$s_p_foc_list, condition = "foc",
                                 itemset = l$return_items)
   names(l$h_s_p_ref) <- names(l$h_s_p_foc) <- c("SFI, PFI", 
-                                            paste0("SFI, PFI|", c(1:N)))
+                                            paste0("SFI, PFI|", c(1:n_i)))
   
-  names(l$delta_h_R_Ef) <- paste0("r-Ef|", c(1:N))
-  names(l$delta_h_s_p_acai) <- paste0("SFI, PFI|", c(1:N))
-  names(l$h_acai_s_p) <- c("SFI, PFI", paste0("SFI, PFI|", c(1:N)))
+  names(l$delta_h_R_Ef) <- paste0("r-Ef|", c(1:n_i))
+  names(l$delta_h_s_p_acai) <- paste0("SFI, PFI|", c(1:n_i))
+  names(l$h_acai_s_p) <- c("SFI, PFI", paste0("SFI, PFI|", c(1:n_i)))
   
   acai_p <- as.data.frame(cbind(l$acai_p))
   h_acai_p <- as.data.frame(l$h_acai_p)
@@ -344,8 +344,6 @@ determine_biased_items <- function(lambda, nu, theta,
                                    lambda_r = NULL, lambda_f = lambda_r,
                                    nu_r = NULL, nu_f = nu_r,
                                    Theta_r = NULL, Theta_f = Theta_r) {
-  biased_items <- c()
-  
   # backward compatibility
   if (missing(nu) && !is.null(nu_r)) {
     nu <- vector(2, mode = "list")
@@ -360,23 +358,17 @@ determine_biased_items <- function(lambda, nu, theta,
     theta[[1]] <- Theta_r; theta[[2]] <- Theta_f
   }
   
-  # compare factor loadings (lambda)
-  lambda_mismatch <- find_mismatched_indices(lambda)
-  if (!is.null(lambda_mismatch)) {
-    biased_items <- c(biased_items, unique(lambda_mismatch[, 1]))  # row indices
+  biased_items <- c()
+  mismatched_on_param <- function(param, biased) {
+    mismatch <- find_mismatched_indices(param)
+    if (!is.null(mismatch)) biased <- c(biased, unique(mismatch[, 1])) # row i
+    biased
   }
-  # compare uniqueness (theta)
-  theta_mismatch <- find_mismatched_indices(theta)
-  if (!is.null(theta_mismatch)) {
-    biased_items <- c(biased_items, unique(theta_mismatch[, 1]))  # row indices
-  }
-  # compare intercepts (nu)
-  nu_mismatch <- find_mismatched_indices(nu)
-  if (!is.null(nu_mismatch)) {
-    biased_items <- c(biased_items, unique(nu_mismatch))  # Vector indices
-  }
-  
+  biased_items <- mismatched_on_param(lambda, biased_items)
+  biased_items <- mismatched_on_param(theta, biased_items)
+  biased_items <- mismatched_on_param(nu, biased_items)
   biased <- unique(biased_items)
+  
   if (length(biased) == 0) {
     message("Strict invariance holds for all items.")
     return(NULL)
@@ -384,48 +376,36 @@ determine_biased_items <- function(lambda, nu, theta,
   return(sort(biased))
 }
 
-
-
-
 find_mismatched_indices <- function(lst) {
   if (any(sapply(lst, length) == 0)) stop("The list contains empty elements.")
   # check for non-numeric elements
   if (!all(sapply(lst, function(x) is.numeric(x) || is.matrix(x)))) {
     stop("All elements must be numeric.")
   }
-  if (all(sapply(lst, is.vector))) {
+  if (all(sapply(lst, is.vector))) { 
     if (!all(sapply(lst, length) == length(lst[[1]]))) {
       stop("Vectors have unequal lengths.")
     }
-    
     # combine vectors into a matrix
     combined_matrix <- do.call(rbind, lst)
     # check for mismatches across rows for each column (vector element index)
     mismatches <- apply(combined_matrix, 2, function(x) length(unique(x)) > 1)
 
     if (!any(mismatches)) return(NULL)
-    
-    return(which(mismatches))
-  } else {
-    # handle lists of matrices or mixed inputs
+    return(data.frame(which(mismatches)))
+  } else {    # handle lists of matrices or mixed inputs
     lst <- lapply(lst, function(x) if (is.vector(x)) matrix(x, nrow = 1) else x)
     
-    # ensure all elements have identical dimensions
     dims <- sapply(lst, dim)
     if (!all(apply(dims, 1, function(x) length(unique(x)) == 1))) {
       stop("All elements must have the same dimensions.")
     }
-    
     # convert list elements into arrays for element-wise comparison
     combined_array <- array(unlist(lst), dim = c(dim(lst[[1]]), length(lst)))
-    
     # check for mismatches across the third dimension
     mismatches <- apply(combined_array, c(1, 2), function(x) length(unique(x)) > 1)
     
-    if (!any(mismatches)) {
-      return(NULL)
-    }
-    # extract row and column indices of mismatches
+    if (!any(mismatches)) return(NULL)
     return(which(mismatches, arr.ind = TRUE))
   }
 }

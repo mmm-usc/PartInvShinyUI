@@ -7,8 +7,8 @@
 #' \code{prep_params} 
 #' @param cfa_fit CFA model output from lavaan.
 #' @param propsel Proportion of selection. If missing, computed using `cut_z`.
-#' @param cut_z Pre-specified cutoff score on the observed composite. This
-#'     argument is ignored when `propsel` has input.
+#' @param cut_z Pre-specified cutoff score on the observed composite. Ignored 
+#'     when `propsel` has input.
 #' @param weights_item A vector of item weights.
 #' @param weights_latent A vector of latent factor weights.
 #' @param alpha A list of length `g` containing `1 x d` latent factor mean
@@ -31,26 +31,26 @@
 #'     number of groups and `n` is the number of items in the scale. The first
 #'     element is assumed to belong to the reference group.
 #' @param pmix List of length `g` containing the mixing proportions of each
-#'     group. If `NULL`, defaults to `1/g` for each group (i.e., the populations
-#'     have equal size).
-#'     #' @param n_dim Number of dimensions, 1 by default. If the user does not supply
-#'        a different value, proceeds with the assumption that the scale is
-#'        unidimensional.
-#' @param n_i_per_dim A vector containing the number of items in each
-#'        dimension; `NULL` by default. If the user provides a value for `n_dim`
-#'        that is \eqn{> 1} but leaves \code{n_i_per_dim = NULL}, assumes that
-#'        the subscales have an equal number of items.
-#' @param delete_items A vector; default to `NULL`. If the user does not
-#'        input a vector of items, only the items determined to contain bias will
-#'        be considered for deletion.
-#' @param delete_one_cutoff (optional) User-specified cutoff to use in
-#'        delete-one scenarios. `NULL` by default; if `NULL`, proportion
-#'        selected under SFI and PFI when the full item set is used is passed
-#'        onto calls to PartInv.
+#'     group. If `NULL`, defaults to `1/g` for each group (i.e., equal sizes).
+#' @param n_dim Number of dimensions, 1 by default.
+#' @param n_i_per_dim A vector containing the number of items per dimension;
+#'     `NULL` by default. If `n_dim` \eqn{> 1} and \code{n_i_per_dim = NULL}, 
+#'      subscales are assumed to have an equal number of items.
+#' @param delete_items A vector; default to `NULL`. If `NULL`, only items 
+#'     determined to contain bias will be considered for deletion.
+#' @param delete_one_cutoff User-specified cutoff to use in delete-one scenarios.
+#'     `NULL` by default; if `NULL`, PS on the full item set will be used.
 #' @param alpha_r,alpha_f,nu_r,nu_f,Theta_r,Theta_f,psi_r,psi_f,lambda_r,lambda_f,phi_r,phi_f,tau_r,tau_f,kappa_r,kappa_f,pmix_ref
-#'        Deprecated; included only for backward compatibility. When comparing two
-#'        groups, parameters with the '_r' suffix refer to the reference group while
-#'        parameters with the '_f' suffix refer to the focal group.
+#'     Deprecated; included for backward compatibility. With two groups, '_r' 
+#'     and '_f' suffixes refer to the reference group and the focal group.
+#' @param labels A character vector with `g` elements to label the reference
+#'     and focal groups on the plot, where `g` is the number of groups. If `NULL`
+#'     groups are labeled as 'Reference' and 'Focal_1' through 'Focal_(g-1)'.
+#' @param plot_contour Logical; whether the contour of the populations should be
+#'     plotted; `TRUE` by default.
+#' @param custom_colors Optional argument for specifying colors.
+#' @param reference Optional argument for specifying the reference group.
+#'     Currently only functional when cfa_fit is provided.
 prep_params <- function(cfa_fit, propsel, cut_z, weights_item, weights_latent,
      alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour,
      labels, n_dim, n_i_per_dim, delete_items, delete_one_cutoff, 

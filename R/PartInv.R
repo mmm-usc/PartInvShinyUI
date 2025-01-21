@@ -2,18 +2,17 @@
 #' @importFrom mnormt pmnorm
 NULL
 
-#' Evaluating selection accuracy for two or more groups based on the MCAA
-#' Framework
+#' Classification Accuracy Analysis with MCAA
 #'
 #' \code{PartInv, PartInvMulti_we} evaluates partial measurement invariance
-#' using the multidimensional classification accuracy analysis
+#' using the multidimensional classification accuracy analysis framework
 #' (Lai & Zhang, 2022), which is an extension of Millsap & Kwok's (2004)
 #' approach.
 #'
 #' @param cfa_fit CFA model output from lavaan.
 #' @param propsel Proportion of selection. If missing, computed using `cut_z`.
-#' @param cut_z Pre-specified cutoff score on the observed composite. This
-#'     argument is ignored when `propsel` has input.
+#' @param cut_z Pre-specified cutoff score on the observed composite. Ignored 
+#'     when `propsel` has input.
 #' @param weights_item A vector of item weights.
 #' @param weights_latent A vector of latent factor weights.
 #' @param alpha A list of length `g` containing `1 x d` latent factor mean
@@ -25,19 +24,18 @@ NULL
 #'     to the reference group.
 #' @param lambda A list of length `g` containing `n x d` factor loading matrices
 #'     where `g` is the number of groups, `d` is the number of latent dimensions,
-#'     and `n` is the number of items in the scale. The first element is assumed
+#'     and `n` is the number of items. The first element is assumed
 #'     to belong to the reference group.
 #' @param nu A list of length `g` containing `1 x n` measurement intercept
 #'     vectors where `g` is the number of groups and `n` is the number of items
-#'     in the scale. The first element is assumed to belong to the reference
+#'    . The first element is assumed to belong to the reference
 #'     group.
 #' @param theta A list of length `g` containing `1 x n` vectors or `n x n`
 #'     matrices of unique factor variances and covariances, where `g` is the
-#'     number of groups and `n` is the number of items in the scale. The first
+#'     number of groups and `n` is the number of items. The first
 #'     element is assumed to belong to the reference group.
 #' @param pmix List of length `g` containing the mixing proportions of each
-#'     group. If `NULL`, defaults to `1/g` for each group (i.e., the populations
-#'     have equal size).
+#'     group. If `NULL`, defaults to `1/g` for each group (i.e., equal sizes).
 #' @param plot_contour Logical; whether the contour of the populations should be
 #'     plotted; `TRUE` by default.
 #' @param show_mi_result If \code{TRUE}, perform selection accuracy analysis
@@ -45,19 +43,15 @@ NULL
 #'     strict invariance model, with common parameter values as weighted
 #'     averages of the input values using `pmix`.
 #' @param labels A character vector with `g` elements to label the reference
-#'     and focal groups on the plot, where `g` is the number of groups. If not
-#'     provided, groups are labeled automatically as 'Reference' (for the first
-#'     group) and 'Focal_1' through 'Focal_(g-1)', where `g` is the number of
-#'     groups.
-#' @param custom_colors Optional argument for specifying colors
+#'     and focal groups on the plot, where `g` is the number of groups. If `NULL`
+#'     groups are labeled as 'Reference' and 'Focal_1' through 'Focal_(g-1)'.
+#' @param custom_colors Optional argument for specifying colors.
 #' @param reference Optional argument for specifying the reference group.
 #' Currently only functional when cfa_fit is provided.
-#' @param ... Other arguments passed to the \code{\link[graphics]{contour}}
-#'     function.
+#' @param ... Other arguments for \code{\link[graphics]{contour}}.
 #' @param alpha_r,alpha_f,nu_r,nu_f,Theta_r,Theta_f,psi_r,psi_f,lambda_r,lambda_f,phi_r,phi_f,tau_r,tau_f,kappa_r,kappa_f,pmix_ref
-#'     Deprecated; included only for backward compatibility. When comparing two
-#'     groups, parameters with the '_r' suffix refer to the reference group while
-#'     parameters with the '_f' suffix refer to the focal group.
+#'     Deprecated; included for backward compatibility. With two groups, '_r' 
+#'     and '_f' suffixes refer to the reference group and the focal group.
 #' @return The output will be a list of six elements and a plot if
 #'     \code{plot_contour == TRUE}:
 #'         \item{propsel}{Proportion selected.}
@@ -174,7 +168,7 @@ PartInv <- function(cfa_fit = NULL,
   # for backward compatibility with different input names ####
   #source(file.path(find.package("unbiasr"), "R", "prep_params.R"))
   # pl: parameter list after adjustments
-  pl <- unbiasr:::prep_params(
+  pl <- prep_params(
     cfa_fit, propsel, cut_z, weights_item, weights_latent, alpha, psi, lambda, 
     theta, nu, pmix, pmix_ref, plot_contour, labels, n_dim = NULL, 
     n_i_per_dim = NULL, delete_items = NULL, delete_one_cutoff = NULL, alpha_r, 

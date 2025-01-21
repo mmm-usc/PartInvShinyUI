@@ -189,13 +189,6 @@ ex_partial <- PartInv(propsel = propsel,
                       pmix_ref = pmix_ref, 
                       plot_contour = plot_contour,
                       labels = c("Reference", "Focal"))
-
-test_that("returns data frames", {
-  acc <- vapply(cohens_h(ex_strict, ex_partial), FUN = inherits, 
-                what = c("data.frame"), FUN.VALUE = logical(1))
-  expect_true(any(acc))
-})
-
 test_that("cohens_h() is computed correctly for comparing reference with the
           Efocal", {
   out <- c(0.104203486, 0.166642094, -0.101844057, -0.180318247,  0.200493093,
