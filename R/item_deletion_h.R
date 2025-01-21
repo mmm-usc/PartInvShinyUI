@@ -55,51 +55,69 @@
 #'     and the focal group on the graph.
 #' @param plot_contour Logical; whether the contour of the populations should be
 #'     plotted; `TRUE` by default.
+#' @param reference Optional argument for specifying the reference group.
+#'     Currently only functional when cfa_fit is provided. If providing parameter 
+#'     estimates instead, reorder estimates such that the first estimates belong to 
+#'     the reference group.
 #' @param digits Number of digits for rounding. 3 by default.
 #' @param ... Other arguments for \code{\link[graphics]{contour}}.
 #' @return An object of class `itemdeletion` containing 13 elements.
-#'     \item{ACAI}{A matrix that stores aggregate PS, SR, SE, SP computed for
-#'     the full set of items and item subsets excluding biased or user specified
-#'     items under PFI.}
-#'     \item{h ACAI (deletion)}{A matrix that stores Cohen's h computed for
-#'     the impact of deleting each item considered in the `ACAI` table.}
-#'     \item{h ACAI SFI-PFI}{A matrix that stores Cohen's h values
-#'   quantifying the discrepancy between ACAI under SFI vs. ACAI under PFI.}
-#'     \item{delta h ACAI SFI-PFI (deletion)}{A matrix that stores delta h
-#'     values quantifying the impact of deleting an item on the discrepancy
-#'     between ACAI under SFI vs. ACAI under PFI for subsets of items.}
-#'     \item{AI Ratio}{A matrix storing Adverse Impact Ratio values computed
-#'     for item subsets by invariance condition.}
-#'     \item{h CAI Ref-EF}{A matrix that stores Cohen's h values quantifying
-#'     the discrepancy between CAI computed for the reference group and the
-#'     expected CAI computed for the focal group if it matched the
-#'     distribution of the reference group (Efocal), under PFI for subsets of
-#'     items.}
-#'     \item{delta h CAI Ref-EF (deletion)}{A matrix that stores delta h
-#'     values quantifying the impact of deleting an item on the discrepancy
-#'     between CAI of reference vs. Efocal groups under PFI.}
-#'     \item{h CAI SFI-PFI}{A list containing two items, `ref` and `foc`
-#'     which are matrices storing Cohen's h values quantifying the
-#'     discrepancy between CAI under SFI vs. PFI for the reference group and
-#'     the focal group respectively, for subsets of items.}
-#'     \item{delta h SFI-PFI (deletion)}{A list containing two items,
-#'     `ref` and `foc` which are matrices storing delta h values quantifying
-#'     the impact of deleting an item on the discrepancy between CAI under
-#'     SFI vs. PFI for the reference group and the focal group respectively,
-#'     for subsets of items.}
-#'     \item{h SFI-PFI by groups}{Two lists (`reference` and `focal`). The lists
-#'     contain tables for each item deletion scenario displaying raw CAI
-#'     under SFI, under PFI, and the Cohen's h value associated with the
-#'     difference between the invariance condition.}
-#'     \item{PartInv}{Two lists (`strict` and `partial`), each containing
-#'     PartInv() outputs.}
-#'     \item{biased_items}{A vector with items considered for deletion.}
+#'     \item{AI}{A data frame storing Adverse Impact (AI) values under partial 
+#'      invariance by groups.}
+#'     \item{ACAI}{A list storing aggregate PS, SR, SE, SP computed for the full
+#'      set of items and item subsets excluding biased or user specified items
+#'      under partial invariance (PFI).}
+#'     \item{h_acai_p}{A list storing Cohen's h values quantifying the impact of 
+#'      deleting each item considered in the `ACAI` table.}
+#'     \item{h_acai_s_p}{A list storing Cohen's h values quantifying the 
+#'      discrepancy between ACAI under SFI vs. ACAI under PFI.}
+#'     \item{delta_h_acai_s_p}{A list storing delta h values quantifying the 
+#'      impact of deleting an item on discrepancies in h_acai_s_p.}
+#'     \item{h_R_EF}{A list storing Cohen's h values quantifying the discrepancy
+#'      between observed CAI for the reference group and the expected CAI 
+#'      computed for the focal group if it matched the distribution of the 
+#'      reference group (Efocal) under PFI.}
+#'     \item{delta_h_R_EF}{A list storing delta h values quantifying the impact
+#'      of deleting an item on discrepancies in h_R_Ef.}
+#'     \item{h_s_p}{A list containing Cohen's h values quantifying the
+#'     discrepancy between CAI under SFI vs. PFI for item subsets.}
+#'     \item{delta_h_s_p}{A list storing delta h values quantifying the impact
+#'      of deleting an item on discrepancies in h_s_p.}
+#'     \item{PartInv}{A list containing PartInv() outputs under PFI and SFI for
+#'      each item deletion scenario.}
+#'     \item{items}{A vector with items considered for deletion.}
+#'     \item{function_call}{Function call to item_deletion_h().}
+#'     \item{digits}{Number of digits utilized for rounding.}
 #' @examples
+#' # Simulate random data to fit a multigroup CFA, invariance across languages
+#' set.seed(7)  
+#' library(lavaan)
+#' sim_m <-
+#'   "f =~ c(1, .7, 1) * x1 + c(.8, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5
+#'    f ~~ c(1, 1.3, 1.5) * f
+#'    f ~  c(0, .5, 1) * 1
+#'    x1 ~ c(0, .3, 0) * 1
+#'    x3 ~ c(.3, 0, -.3) * 1
+#'    x1 ~~ c(1, .5, 1) * x1"
+#' dat_sim <- simulateData(sim_m, sample.nobs = c(120, 90, 50))
+#' dat_sim$group <- ifelse(dat_sim$group == 1, "English",
+#'                  ifelse(dat_sim$group == 2, "Japanese",
+#'                  ifelse(dat_sim$group == 3, "Swahili", NA)))
+#' fit_sim <- lavaan::cfa(model = sim_m, data = dat_sim, group = "group")
+#' del <- item_deletion_h(cfa_fit = fit_sim, propsel = .05)
+#' del # formatted
+#' summary(del) #formatted with additional output
+#' del$AI # can access all outputs without rounding or formatting
+#' del$ACAI
+#' del$PartInv_outputs$`Full item set`$summary
+#' # choose Japanese as the reference group and use a cutoff:
+#' del <- item_deletion_h(cfa_fit = fit_sim, cut_z = 15, reference = "Japanese")
+#' del
+#' 
 #' # Multidimensional example
 #' lambda_matrix <- matrix(0, nrow = 5, ncol = 2)
 #' lambda_matrix[1:2, 1] <- c(.322, .655)
 #' lambda_matrix[3:5, 2] <- c(.398, .745, .543)
-#'
 #' multi_dim <- item_deletion_h(propsel = .05, n_dim = 5,
 #'                              weights_item = c(1/4, 1/4, 1/6, 1/6, 1/6),
 #'                              weights_latent = c(0.5, 0.5),
@@ -115,19 +133,18 @@
 #' print(multi_dim)
 #' # Single dimension example
 #' single_dim <- item_deletion_h(propsel = .10,
-#'                                weights_item = c(1, 0.9, 0.8, 1),
+#'                                weights_item = c(1, 0.9, 1, 1),
 #'                                weights_latent = 0.9,
 #'                                alpha_r = 0.5,
 #'                                alpha_f = 0,
 #'                                psi_r = 1,
 #'                                lambda_r = c(.3, .5, .9, .7),
-#'                                nu_r = c(.225, .025, .010, .240),
+#'                                nu_r = c(.225, .025, .240, .240),
 #'                                nu_f = c(.225, -.05, .240, -.025),
 #'                                Theta_r = diag(.96, 4),
 #'                                n_dim = 1, plot_contour = TRUE)
 #' print(single_dim)
 #' # Using cfa_fit
-#' library(lavaan)
 #' HS <- HolzingerSwineford1939
 #' HS$sex <- as.factor(HS$sex)
 #' HS.model <- ' visual  =~ x1 + x2 + x3
@@ -136,20 +153,6 @@
 #' 
 #' fit <- cfa(HS.model, data = HS, group = "sex")
 #' item_deletion_h(cfa_fit = fit, propsel = .05)
-#' 
-#' # Simulate random data to fit a multigroup cfa
-#' set.seed(7)  
-#' sim_m <-
-#'   "f =~ c(1, .7, 1) * x1 + c(.8, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5
-#'    f ~~ c(1, 1.3, 1.5) * f
-#'    f ~  c(0, .5, 1) * 1
-#'    x1 ~ c(0, .3, 0) * 1
-#'    x3 ~ c(.3, 0, -.3) * 1
-#'    x1 ~~ c(1, .5, 1) * x1"
-#' dat_sim <- simulateData(sim_m, sample.nobs = c(80, 100, 110))
-#' fit_sim <- lavaan::cfa(model = sim_m, data = dat_sim, group = "group")
-#' item_deletion_h(cfa_fit = fit_sim, propsel = .05)
-
 #' @export
 item_deletion_h <- function(cfa_fit = NULL,
                             propsel = NULL,
@@ -169,13 +172,13 @@ item_deletion_h <- function(cfa_fit = NULL,
                             psi_r = NULL, psi_f = psi_r,
                             lambda_r = NULL, lambda_f = lambda_r,
                             nu_r = NULL, nu_f = nu_r,
-                            Theta_r = NULL, Theta_f = Theta_r, digits = 3,
+                            Theta_r = NULL, Theta_f = Theta_r, reference = NULL,
+                            digits = 3,
                             ...) {
   functioncall <- match.call()            
   CAIs <- c("TP", "FP", "TN", "FN", "PS", "SR", "SE", "SP")
   ACAI_labs <- paste0(CAIs, "*")
-  # for backward compatibility with different input names ####
-  # pl: parameter list after adjustments
+  # make adjustments for formatting and backward compatibility
   pl <- prep_params(
     cfa_fit, propsel, cut_z, weights_item, weights_latent, alpha, psi, lambda, 
     theta, nu, pmix, pmix_ref, plot_contour, labels, n_dim = n_dim, 
@@ -183,7 +186,7 @@ item_deletion_h <- function(cfa_fit = NULL,
     delete_one_cutoff = delete_one_cutoff, alpha_r, alpha_f,
     phi_r = NULL, phi_f = NULL, psi_r, psi_f, lambda_r, lambda_f, tau_r = NULL, 
     tau_f = NULL, kappa_r = NULL, kappa_f = NULL, nu_r, nu_f, Theta_r, Theta_f, 
-    reference = NULL, custom_colors = NULL)
+    reference, custom_colors = NULL)
   
   alpha <- pl$alpha
   psi <- pl$psi
@@ -198,8 +201,7 @@ item_deletion_h <- function(cfa_fit = NULL,
   weights_item <- pl$weights_item
   labels <- pl$labels
 
-  #####
-  # # Determine which set of items will be returned
+  # determine which set of items will be returned
   biased_items <- c()
   if (is.null(delete_items)) { # default: return only the biased items.
       biased_items <- determine_biased_items(lambda, nu, theta)
@@ -211,11 +213,10 @@ item_deletion_h <- function(cfa_fit = NULL,
       stop("'delete_items' cannot take integers > the scale length.")}
     biased_items <- delete_items
   }
-  # all the labels
-  labs <-  c(paste0("|", 1:n_i)) #paste0("del_i", 1:n_i) # paste0("del_i", biased_items)
-  #####
+
+  labs <-  c(paste0("|", 1:n_i))
   if (is.null(delete_items)) {
-    final_set <- paste0("|", biased_items)#labs
+    final_set <- paste0("|", biased_items)
   } else {
     final_set <- paste0("|", delete_items)
   }
@@ -247,6 +248,7 @@ item_deletion_h <- function(cfa_fit = NULL,
     df_cn = paste0("h(", CAIs, ")"), df_rn = c("Full", labs), groups = labels)
   
   store_str <- store_par <- vector(mode = "list", n_i + 1)
+  names(store_str) <- names(store_par) <- c("Full item set", labs)
   AI_ratios <- as.data.frame(matrix(ncol = num_g, nrow = n_i + 1), 
                              row.names = c("Full", labs))
 
@@ -382,25 +384,21 @@ item_deletion_h <- function(cfa_fit = NULL,
    }, delta_h_acai_s_p, h_acai_s_p)
    AI_ratios[i,] <- as.vector(c(1, store_par[[i]]$ai_ratio), mode = "double")
   }
-   
-
-   
   
   out <- list(
-    "AI" = AI_ratios,
-    "ACAI" = acai_p,
-    "h_acai_p" = h_acai_p, #"h ACAI (deletion)"= h_acai_p,
-    "h_acai_s_p" = h_acai_s_p, #"h ACAI SFI-PFI"= h_acai_s_p,
-    "delta_h_acai_s_p" = delta_h_acai_s_p, #"delta h ACAI SFI-PFI (deletion)" = delta_h_acai_s_p,
-    "h_R_Ef" = h_R_Ef, #"h CAI Ref-Ef" = h_R_Ef,
-    "delta_h_R_Ef" = delta_h_R_Ef, #"delta h CAI Ref-Ef" = delta_h_R_Ef,
-    "h_s_p" = h_s_p, # "h CAI SFI-PFI" = h_s_p,
-    "delta_h_s_p" = delta_h_s_p,# "delta h SFI-PFI (deletion)" = delta_h_s_p
-   #   list("referenceGroup" = delta_h_s_p_R_del_i,
-   #        "focalGroup(s)" = delta_h_s_p_foc_del_i)
-     "items" = final_set,
-     "function_call" = functioncall,
-     "digits" = ifelse(is.null(digits), 3, digits)
+  "AI" = AI_ratios,
+  "ACAI" = acai_p,
+  "h_acai_p" = h_acai_p, 
+  "h_acai_s_p" = h_acai_s_p,
+  "delta_h_acai_s_p" = delta_h_acai_s_p, 
+  "h_R_Ef" = h_R_Ef, 
+  "delta_h_R_Ef" = delta_h_R_Ef, 
+  "h_s_p" = h_s_p, 
+  "delta_h_s_p" = delta_h_s_p,
+  "PartInv_outputs" = store_par,
+  "items" = final_set,
+  "function_call" = functioncall,
+  "digits" = ifelse(is.null(digits), 3, digits)
      )
   
   class(out) <- "itemdeletion"

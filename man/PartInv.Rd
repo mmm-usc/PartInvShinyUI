@@ -98,7 +98,9 @@ groups are labeled as 'Reference' and 'Focal_1' through 'Focal_(g-1)'.}
 \item{custom_colors}{Optional argument for specifying colors.}
 
 \item{reference}{Optional argument for specifying the reference group.
-Currently only functional when cfa_fit is provided.}
+Currently only functional when cfa_fit is provided. If providing parameter
+estimates instead, reorder estimates such that the first estimates belong to
+the reference group.}
 
 \item{alpha_r, alpha_f, nu_r, nu_f, Theta_r, Theta_f, psi_r, psi_f, lambda_r, lambda_f, phi_r, phi_f, tau_r, tau_f, kappa_r, kappa_f, pmix_ref}{Deprecated; included for backward compatibility. With two groups, '_r'
 and '_f' suffixes refer to the reference group and the focal group.}

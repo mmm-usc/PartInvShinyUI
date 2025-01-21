@@ -1,5 +1,4 @@
 
-
 #' Called in item_deletion_h.R and PartInv.R to ensure backward
 #' compatibility with different input names, check dimension and object 
 #' types, and prepare/format the variables. 

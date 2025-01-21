@@ -50,13 +50,11 @@ test_that("item_deletion_h() handles matrix input", {
                                   pmix_ref = pmix_CESD_r, 
                                   plot_contour = FALSE,
                                   print_formatted = TRUE)
-  # outputs should be equivalent aside from the function calls (index 11)
-  expect_equal(CESD_pos[-11], CESD_pos_mat[-11]) 
+  # outputs should be equivalent aside from the function calls (index 12)
+  expect_equal(CESD_pos[-12], CESD_pos_mat[-12]) 
 })
 
-
 ### Helper functions
-
 test_that("redistribute_weights() is working properly", {
 error_ex <- c(1:12)
 one_dim_w <- c(1:7)
@@ -190,58 +188,10 @@ ex_partial <- PartInv(propsel = propsel,
                       pmix_ref = pmix_ref, 
                       plot_contour = plot_contour,
                       labels = c("Reference", "Focal"))
-test_that("cohens_h() is computed correctly for comparing reference with the
-          Efocal", {
+test_that("cohens_h() computed correctly for comparing the reference with Efocal", {
   out <- c(0.104203486, 0.166642094, -0.101844057, -0.180318247,  0.200493093,
            -0.161048764, 0.211048367, -0.373602451)
   expect_equal(out, cohens_h(ex_partial$summary$Reference, 
                              ex_partial$summary$`E_R(Focal)`))
   
 })
-
-
-# la <- list(
-#   matrix(c(0.32, 0.65, 0, 0, 0, 3, 0, 0.3, 0.7, 0.5), nrow = 5, byrow = FALSE),
-#   matrix(c(0.32, 0.65, 0, 0, 0, 0, 0, 0.3, 0.7, 0.5), nrow = 5, byrow = FALSE),
-#   matrix(c(0.32, 0.65, 0, 0, 0, 0, 0, 0.3, 0.7, 0.5), nrow = 5, byrow = FALSE),
-#   matrix(c(0.32, 0.65, 0, 0, 3, 0, 0, 0.3, 0.7, 0.5), nrow = 5, byrow = FALSE)
-# )
-# 
-# lambda_matrix <- matrix(0, nrow = 5, ncol = 2)
-# lambda_matrix[1:2, 1] <- c(.3, .6)
-# lambda_matrix[3:5, 2] <- c(.4, .75, .53)
-# 
-# lambda_matrix2 <- lambda_matrix
-# lambda_matrix3 <- lambda_matrix
-# lambda_matrix2[1,1] <- 3
-# lambda_matrix3[2,2] <- 3
-# 
-# print(find_mismatched_indices(
-#   list(lambda_matrix, lambda_matrix2, lambda_matrix3)))
-# 
-# # Example list with vectors
-# lv <- list(
-#   c(0.3, 0, 0.3, 3),
-#   c(0.3, 0, 0.3, 9),
-#   c(0.3, 0, 0.3, 3),
-#   c(0.3, 0, 0.3, 3)
-# )
-# print(find_mismatched_indices(lv))
-# 
-# # Example list with identical matrices
-# lms <- list(
-#   matrix(c(1, 2, 3, 4, 5, 6), nrow = 2, byrow = TRUE),
-#   matrix(c(1, 2, 3, 4, 5, 6), nrow = 2, byrow = TRUE),
-#   matrix(c(1, 2, 3, 4, 5, 6), nrow = 2, byrow = TRUE),
-#   matrix(c(1, 2, 3, 4, 5, 6), nrow = 2, byrow = TRUE)
-# )
-# 
-# print(find_mismatched_indices(lms))
-# 
-# nus <- list(c(.225, .025, .010, .240, .125), c(.225, -.05, .240, -.025, .125))
-# print(find_mismatched_indices(nus))
-
-
-
-
-
