@@ -186,7 +186,7 @@ item_deletion_h <- function(cfa_fit = NULL,
     delete_one_cutoff = delete_one_cutoff, alpha_r, alpha_f,
     phi_r = NULL, phi_f = NULL, psi_r, psi_f, lambda_r, lambda_f, tau_r = NULL, 
     tau_f = NULL, kappa_r = NULL, kappa_f = NULL, nu_r, nu_f, Theta_r, Theta_f, 
-    reference, custom_colors = NULL)
+    reference, custom_colors = NULL, PartInv_fit = NULL)
   
   alpha <- pl$alpha
   psi <- pl$psi

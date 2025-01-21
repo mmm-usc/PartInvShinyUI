@@ -175,8 +175,8 @@ PartInv <- function(cfa_fit = NULL,
     theta, nu, pmix, pmix_ref, plot_contour, labels, n_dim = NULL, 
     n_i_per_dim = NULL, delete_items = NULL, delete_one_cutoff = NULL, alpha_r, 
     alpha_f, phi_r, phi_f, psi_r, psi_f, lambda_r, lambda_f, tau_r, tau_f, 
-    kappa_r, kappa_f, nu_r, nu_f, Theta_r, Theta_f, reference, custom_colors
-    )
+    kappa_r, kappa_f, nu_r, nu_f, Theta_r, Theta_f, reference, custom_colors,
+    PartInv_fit = NULL)
   
   alpha <- pl$alpha
   psi <- pl$psi
@@ -205,21 +205,16 @@ PartInv <- function(cfa_fit = NULL,
 
   if (show_mi_result) {
     pop_weights <- pmix
-    lambda_average <- .weighted_average_list(lambda, weights = pop_weights)
-    nu_average <- .weighted_average_list(nu, weights = pop_weights)
-    theta_average <- .weighted_average_list(theta, weights = pop_weights)
+    lambda_avg <- .weighted_average_list(lambda, weights = pop_weights)
+    nu_avg <- .weighted_average_list(nu, weights = pop_weights)
+    theta_avg <- .weighted_average_list(theta, weights = pop_weights)
 
-    lambda_average_g <- nu_average_g <- theta_average_g <-
-      vector(mode = "list", length = num_g)
-
-    for (i in 1:num_g) {
-      lambda_average_g[[i]] <- lambda_average
-      nu_average_g[[i]] <- nu_average
-      theta_average_g[[i]] <- theta_average
-    }
+    lambda_avg_g <- replicate(num_g, lambda_avg, simplify = FALSE)
+    nu_avg_g <- replicate(num_g, nu_avg, simplify = FALSE)
+    theta_avg_g <- replicate(num_g, theta_avg, simplify = FALSE)
 
     out_mi <- compute_cai(weights_item, weights_latent, alpha, psi,
-      lambda_average_g, nu_average_g, theta_average_g,
+      lambda_avg_g, nu_avg_g, theta_avg_g,
       pmix, propsel, labels, cut_z, num_g = num_g, 
       is_mi = TRUE
     )

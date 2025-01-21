@@ -87,7 +87,6 @@ auc <- function(SE, SP) {
 #' out2 <- return_SE_SP(PartInv_fit = PI_out, 
 #'                     mod_names = c("strict", "partial"))
 #' str(out2)
-#'
 #' # when cfa output is provided as input
 #' library(lavaan)
 #' data("HolzingerSwineford1939", package = "lavaan")
@@ -101,9 +100,9 @@ auc <- function(SE, SP) {
 #'                     mod_names = c("strict", "partial"))
 #' str(out3)
 #' @export
-return_SE_SP <- function(cfa_fit,
-                         PartInv_fit,
-                         pmix, 
+return_SE_SP <- function(cfa_fit = NULL,
+                         PartInv_fit = NULL,
+                         pmix = NULL, 
                          from = 0.01,
                          to = 0.9999,
                          by = 0.01,
@@ -116,44 +115,60 @@ return_SE_SP <- function(cfa_fit,
                          psi = NULL,
                          nu = NULL, 
                          labels = NULL,
+                         weights_item = NULL,
+                         weights_latent = NULL,
                          ...) {
-  # if the user provided the output from cfa()
-  if(!missing(cfa_fit) && missing(PartInv_fit)) {
-    est <- format_cfa_partinv(cfa_fit, comp = "est")
-    n_g <- cfa_fit@Data@ngroups # number of groups
-    psi <- est$psi
-    lambda <- est$lambda
-    theta <- est$theta
-    alpha <- est$alpha
-    nu <- est$nu
-  }
-  # if the user provided the output from PartInv
-  if(missing(cfa_fit) && !missing(PartInv_fit)) {
-    n_g <- length(PartInv_fit$labels) # number of groups
-    if(is.null(labels)) {
-      labels <- PartInv_fit$labels
-    }
+  # if PartInv_fit was provided, use it to extract relevant parameters.
+  if (!is.null(PartInv_fit)) {
+    if (is.null(labels)) labels <- PartInv_fit$labels
     psi <- eval(PartInv_fit$functioncall$psi)
     lambda <- eval(PartInv_fit$functioncall$lambda)
     theta <- eval(PartInv_fit$functioncall$theta)
     alpha <- eval(PartInv_fit$functioncall$alpha)
     nu <- eval(PartInv_fit$functioncall$nu)
-  }
-  # if the user provided the relevant matrices of parameter estimates instead
-  # of providing the cfa() or PartInv() outputs
-  if(missing(cfa_fit) & missing(PartInv_fit) & !is.null(alpha) & !is.null(psi) & 
-     !is.null(lambda) & !is.null(theta)  & !is.null(nu)) {
-    n_g <- length(alpha) # number of groups
-  }
-  
-  if(!missing(cfa_fit) && !missing(PartInv_fit) && 
-     any(!is.null(c(alpha, lambda, theta, psi, nu)))) {
-    warning('Please only provide the output of cfa(), the output of PartInv(), or vectors of parameter estimates.')
+    weights_latent <- eval(PartInv_fit$functioncall$weights_latent)
+    weights_item <- eval(PartInv_fit$functioncall$weights_item)
+    num_g <- length(alpha)
+    n_i <- length(nu[[1]])
+    d <- length(alpha[[1]])
+    alpha <- lapply(alpha, FUN = as.matrix)
+    psi <- lapply(psi, FUN = matrix, nrow = d, ncol = d)
+    
+    if (is.null(pmix)) {
+      nbs <- eval(PartInv_fit$cfa_fit)
+      if (!is.null(nbs)) {
+        pmix <- nbs@data@nobs / sum(nbs@data@nobs)
+      } else {
+        message("Mixing proportions not provided (pmix). Assuming equal weights.")
+        pmix <- rep(1, num_g) / num_g
+      }
+    } 
+  } else {
+    pl <- prep_params(
+      cfa_fit, propsel, cut_z, weights_item, weights_latent, alpha, psi, lambda,
+      theta, nu, pmix, pmix_ref = NULL, plot_contour = NULL, labels, n_dim = NULL,
+      n_i_per_dim = NULL, delete_items = NULL, delete_one_cutoff = NULL, 
+      alpha_r = NULL, alpha_f = NULL, phi_r = NULL, phi_f = NULL, psi_r = NULL, 
+      psi_f = NULL, lambda_r = NULL, lambda_f = NULL, tau_r = NULL, tau_f = NULL,
+      kappa_r = NULL, kappa_f = NULL, nu_r = NULL, nu_f = NULL, Theta_r = NULL, 
+      Theta_f = NULL, reference = NULL, custom_colors = NULL, PartInv_fit)
+
+    alpha <- pl$alpha
+    psi <- pl$psi
+    lambda <- pl$lambda
+    nu <- pl$nu
+    theta <- pl$theta
+    pmix <- pl$pmix
+    n_i <- pl$n_i
+    num_g <- pl$num_g
+    d <- pl$d
+    weights_latent <- pl$weights_latent
+    weights_item <- pl$weights_item
+    labels <- pl$labels
   }
   
   propsels <- seq(from = from, to = to, by = by)
   use <- "propsels" # set to use proportion of selection by default
- # xl <- "Proportion of selection"
   rangeVals <- propsels
 
   # if the user provided the max and min cutoff values, update rangeVals with
@@ -161,90 +176,55 @@ return_SE_SP <- function(cfa_fit,
   if (!is.null(cutoffs_from) && !is.null(cutoffs_to)) {
     cutoffs <- seq(from = cutoffs_from, to = cutoffs_to, by = by)
     rangeVals <- cutoffs
-  # xl <- "Thresholds" # for the plots later -- might want to add more 
-    # detailed captions using this info
     use <- "cutoffs" # update to use cutoffs instead
-  }
-  
-  # give a warning to the user if the number of labels does not match the 
-  # number of groups
-  if(!is.null(labels) && length(labels) != n_g) {
-    warning('Please provide the correct number of labels.')
-  }
-  
-  # if the user did not provide labels, or provided the wrong number of labels,
-  # and the cfa output was provided, extract relevant info from the output
-  # to create labels
-  if ((is.null(labels) || (length(labels) != n_g))) {
-    if(!missing(cfa_fit)){
-      labels <- cfa_fit@Data@group.label
-    }
-    # if the cfa output was not provided, make up group labels with 'Group'
-    if(missing(cfa_fit)){
-      labels <- paste(rep("Group"), seq(1:n_g))
-    }
-    labels <- paste(labels, c("(reference)", rep("(focal)", n_g - 1)))
   }
 
   cai <- c("Sensitivity", "Specificity")
-  ls_mat <- matrix(NA, ncol = length(rangeVals), nrow = n_g,
+  ls_mat <- matrix(NA, ncol = length(rangeVals), nrow = num_g,
                    dimnames = list(labels, rangeVals))
   ls_names <- c(t(outer(cai, Y = mod_names, FUN = paste, sep = "_")))
   vals <- rep(list(ls_mat), length(ls_names))
   names(vals) <- ls_names
 
-  # if pmix is missing, assume equal mixing proportions
-  if (missing(pmix)) pmix <- as.matrix(c(rep(1 / n_g, n_g)), ncol = n_g)
-  pmix <- as.vector(pmix)
-
-  # call PartInv with each proportion of selection and store CAI in the list of
-  # data frames
+  # call PartInv with each propsel/cutoff and store CAI in the list of dfs
   for (p in seq_along(rangeVals)) {
-    # if the user provided cutoff values
     if (use == "cutoffs") {
-      suppressWarnings({
-        pinv <- PartInv(cut_z = cutoffs[p],
-                        psi = psi,
-                        lambda = lambda,
-                        theta = theta,
-                        alpha = alpha,
-                        nu = nu,
-                        pmix = pmix,
-                        plot_contour = FALSE,
-                        labels = labels,
-                        show_mi_result = TRUE)
-      })
+      cut_z <- cutoffs[p]; propsel <- NULL
+    } else {
+      propsel <- propsels[p]; cut_z <- NULL
     }
-    # if the user did not provide cutoff values, follow the default
-    if (use == "propsels") {
-      suppressWarnings({
-        pinv <- PartInv(propsel = propsels[p],
-                        psi = psi,
-                        lambda = lambda,
-                        theta = theta,
-                        alpha = alpha,
-                        nu = nu,
-                        pmix = pmix,
-                        plot_contour = FALSE,
-                        labels = labels,
-                        show_mi_result = TRUE)
-      })
+    params <- list(weights_item = weights_item, weights_latent = weights_latent, 
+                   alpha = alpha, psi = psi, lambda = lambda, nu = nu, 
+                   theta = theta, pmix = pmix, propsel = propsel, 
+                   labels = labels, cut_z = cut_z, num_g = num_g)
+    pinv <- do.call(compute_cai, params)
+    
+    if ("strict" %in% mod_names) {
+      lambda_avg <- .weighted_average_list(lambda, weights = pmix)
+      nu_avg <- .weighted_average_list(nu, weights = pmix)
+      theta_avg <- .weighted_average_list(theta, weights = pmix)
+      
+      params[["lambda"]] <- replicate(num_g, lambda_avg, simplify = FALSE)
+      params[["nu"]] <- replicate(num_g, nu_avg, simplify = FALSE)
+      params[["theta"]] <- replicate(num_g, theta_avg, simplify = FALSE)
+      
+      out_mi <- do.call(compute_cai, params)
+      colnames(out_mi$summary) <- labels
+      names(out_mi) <- paste0(names(out_mi), "_mi")
+      out_mi$summary_mi <- out_mi$summary_mi[, 1:num_g]
+      pinv <- c(pinv, out_mi)
     }
-
-    num_comb <- length(cai) * length(mod_names) + 1 # for specifying the
-    # index within vals
+    
+    num_comb <- length(cai) * length(mod_names) + 1 # for specifying the index
     ind <- 1
 
     while (ind < num_comb) {
-      for (i in cai) {
-        # for each specified invariance condition
+      for (i in cai) { 
         for (j in seq_along(mod_names)) {
-          # if the specified invariance condition is partial invariance,
           vals[[ind]][, p] <-
-            ifelse(rep(mod_names[j] == "partial", n_g),
-                   as.numeric(pinv$summary[i, 1:n_g]),
-                   as.numeric(pinv$summary_mi[i, 1:n_g]))
-
+            ifelse(rep(mod_names[j] == "partial", num_g),
+                   as.numeric(pinv$summary[i, 1:num_g]),
+                   as.numeric(pinv$summary_mi[i, 1:num_g]))
           ind <- ind + 1
         }
       }

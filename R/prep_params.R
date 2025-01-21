@@ -50,11 +50,13 @@
 #' @param custom_colors Optional argument for specifying colors.
 #' @param reference Optional argument for specifying the reference group.
 #'     Currently only functional when cfa_fit is provided.
-prep_params <- function(cfa_fit, propsel, cut_z, weights_item, weights_latent,
-     alpha, psi, lambda, theta, nu, pmix, pmix_ref, plot_contour,
-     labels, n_dim, n_i_per_dim, delete_items, delete_one_cutoff, 
-     alpha_r, alpha_f, phi_r, phi_f, psi_r, psi_f, lambda_r, lambda_f, tau_r, tau_f, 
-     kappa_r, kappa_f, nu_r, nu_f, Theta_r, Theta_f, reference, custom_colors) {
+#' @param PartInv_fit A PartInv object.
+prep_params <- function(cfa_fit = NULL, propsel = NULL, cut_z = NULL, weights_item = NULL, weights_latent = NULL,
+     alpha = NULL, psi = NULL, lambda = NULL, theta = NULL, nu = NULL, pmix = NULL, pmix_ref = NULL, plot_contour,
+     labels = NULL, n_dim = NULL, n_i_per_dim = NULL, delete_items = NULL, delete_one_cutoff = NULL, 
+     alpha_r = NULL, alpha_f = NULL, phi_r = NULL, phi_f = NULL, psi_r = NULL, psi_f = NULL, lambda_r = NULL, lambda_f = NULL, tau_r = NULL, tau_f = NULL, 
+     kappa_r = NULL, kappa_f = NULL, nu_r = NULL, nu_f = NULL, Theta_r = NULL, Theta_f = NULL, reference = NULL, custom_colors,
+     PartInv_fit = NULL) {
  
   #### 'alpha', 'nu', 'lambda', 'theta', and 'psi' #### 
   if (is.null(cfa_fit)) {
