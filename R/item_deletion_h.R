@@ -173,7 +173,7 @@ item_deletion_h <- function(cfa_fit = NULL,
                             ...) {
   functioncall <- match.call()            
   CAIs <- c("TP", "FP", "TN", "FN", "PS", "SR", "SE", "SP")
-  
+  ACAI_labs <- paste0(CAIs, "*")
   # for backward compatibility with different input names ####
   # pl: parameter list after adjustments
   pl <- prep_params(
@@ -196,6 +196,7 @@ item_deletion_h <- function(cfa_fit = NULL,
   d <- pl$d
   weights_latent <- pl$weights_latent
   weights_item <- pl$weights_item
+  labels <- pl$labels
 
   #####
   # # Determine which set of items will be returned
@@ -211,28 +212,45 @@ item_deletion_h <- function(cfa_fit = NULL,
     biased_items <- delete_items
   }
   # all the labels
-  del_i_labs <- paste0("del_i", 1:n_i) # paste0("del_i", biased_items)
+  labs <-  c(paste0("|", 1:n_i)) #paste0("del_i", 1:n_i) # paste0("del_i", biased_items)
   #####
   if (is.null(delete_items)) {
-    final_set <- paste0("del_i", biased_items)#del_i_labs
+    final_set <- paste0("|", biased_items)#labs
   } else {
-    final_set <- paste0("del_i", delete_items)
+    final_set <- paste0("|", delete_items)
   }
   
-  acai_p <- acai_s <- h_acai_s_p <- h_R_Ef <- 
-    create_list_of_dfs(ls_len = num_g - 1, ncol = 8, nrow = n_i + 1, 
-                       df_cn = CAIs, df_rn = c("Full", del_i_labs))
-  h_acai_p <- delta_h_R_Ef <- delta_h_acai_s_p <- 
-    create_list_of_dfs(ls_len = num_g - 1, ncol = 8, nrow = n_i, df_cn = CAIs,
-                       df_rn = del_i_labs) 
-  delta_h_s_p <-  create_list_of_dfs(ls_len = num_g, ncol = 8, nrow = n_i, 
-                                     df_cn = CAIs, df_rn = del_i_labs) 
-  h_s_p <- create_list_of_dfs(ls_len = num_g, ncol = 8, nrow = n_i + 1 , 
-                              df_cn = CAIs, df_rn = c("Full", del_i_labs))
+  acai_p <- acai_s <- create_list_of_dfs(
+    ls_len = num_g - 1, ncol = 8, nrow = n_i + 1, 
+    df_cn = paste0(CAIs, "*"), df_rn = c("Full", labs), groups = labels[-1])
+  h_acai_s_p <- create_list_of_dfs(
+    ls_len = num_g - 1, ncol = 8, nrow = n_i + 1, 
+    df_cn = paste0("h(", CAIs, "*)"), df_rn = c("Full", labs), groups = labels[-1])
+  h_R_Ef <- create_list_of_dfs(
+    ls_len = num_g - 1, ncol = 8, nrow = n_i + 1, 
+    df_cn = paste0("h(", CAIs, ")"), df_rn = c("r_Ef", paste0("r_Ef", labs)), 
+    groups = labels[-1])
+  h_acai_p <- create_list_of_dfs(
+    ls_len = num_g - 1, ncol = 8, nrow = n_i, df_cn = paste0("h(", CAIs, "*)"),
+    df_rn = labs, groups = labels[-1])
+  delta_h_R_Ef <- create_list_of_dfs(
+    ls_len = num_g - 1, ncol = 8, nrow = n_i,
+    df_cn = paste0("\u0394h(", CAIs, ")"), df_rn = labs, groups = labels[-1])
+  delta_h_acai_s_p <- create_list_of_dfs(
+    ls_len = num_g - 1, ncol = 8, nrow = n_i, 
+    df_cn = paste0("\u0394h(", CAIs, "*)"), df_rn = labs, groups = labels[-1])
+  delta_h_s_p <- create_list_of_dfs(
+    ls_len = num_g, ncol = 8, nrow = n_i, 
+    df_cn = paste0("\u0394h(", CAIs, ")"), df_rn = labs, groups = labels)
+  h_s_p <- create_list_of_dfs(
+    ls_len = num_g, ncol = 8, nrow = n_i + 1 , 
+    df_cn = paste0("h(", CAIs, ")"), df_rn = c("Full", labs), groups = labels)
   
   store_str <- store_par <- vector(mode = "list", n_i + 1)
-  AI_ratios <- as.data.frame(matrix(ncol = num_g, nrow = n_i + 1))
+  AI_ratios <- as.data.frame(matrix(ncol = num_g, nrow = n_i + 1), 
+                             row.names = c("Full", labs))
 
+  colnames(AI_ratios) <- c("(SFI)", paste0(labels[-1]))
   out_par <- c("propsel", "cutpt_xi", "cutpt_z", "summary", "bivar_data", 
                "ai_ratio", "labels", "functioncall")
   out_str <- c(paste0(out_par[1:6], "_mi"), out_par[7:8])
@@ -362,48 +380,29 @@ item_deletion_h <- function(cfa_fit = NULL,
      df[i-1,] <- delta_h(df2[1,], df2[i,])
      df
    }, delta_h_acai_s_p, h_acai_s_p)
-   
    AI_ratios[i,] <- as.vector(c(1, store_par[[i]]$ai_ratio), mode = "double")
   }
+   
 
-  rownames(AI_ratios) <- c("Full", del_i_labs)
-  
-  
-  # get the subset of items the user requested
-  AI_ratios <- AI_ratios[c("Full", final_set), ]
-  acai_p <- lapply(acai_p, FUN = function(x) x[c("Full", final_set),])
-  h_acai_p <- lapply(h_acai_p, FUN = function(x) x[final_set,])
-  h_acai_s_p <- lapply(h_acai_s_p, FUN = function(x) x[c("Full", final_set),])
-  delta_h_acai_s_p <- lapply(delta_h_acai_s_p, FUN = function(x) x[final_set,])
-  h_R_Ef <- lapply(h_R_Ef, FUN = function(x) x[c("Full", final_set),])
-  delta_h_R_Ef <- lapply(delta_h_R_Ef, FUN = function(x) x[final_set,])
-  delta_h_s_p <- lapply(delta_h_s_p, FUN = function(x) x[final_set,])
-  
-  # not returned? or not printed by the class method? h_acai_s_p, delta_h_acai_s_p, delta_h_s_p 
+   
   
   out <- list(
+    "AI" = AI_ratios,
     "ACAI" = acai_p,
-    "h_acai_p"= h_acai_p,
-   # "h_acai_s_p"= h_acai_s_p,
-   # "delta_h_acai_s_p" = delta_h_acai_s_p,
-    "h_R_Ef" = h_R_Ef,
-    "delta_h_R_Ef" = delta_h_R_Ef#,
-  #  "delta h (impact of deleting item i)" = delta_h_s_p
+    "h_acai_p" = h_acai_p, #"h ACAI (deletion)"= h_acai_p,
+    "h_acai_s_p" = h_acai_s_p, #"h ACAI SFI-PFI"= h_acai_s_p,
+    "delta_h_acai_s_p" = delta_h_acai_s_p, #"delta h ACAI SFI-PFI (deletion)" = delta_h_acai_s_p,
+    "h_R_Ef" = h_R_Ef, #"h CAI Ref-Ef" = h_R_Ef,
+    "delta_h_R_Ef" = delta_h_R_Ef, #"delta h CAI Ref-Ef" = delta_h_R_Ef,
+    "h_s_p" = h_s_p, # "h CAI SFI-PFI" = h_s_p,
+    "delta_h_s_p" = delta_h_s_p,# "delta h SFI-PFI (deletion)" = delta_h_s_p
    #   list("referenceGroup" = delta_h_s_p_R_del_i,
    #        "focalGroup(s)" = delta_h_s_p_foc_del_i)
-    )
+     "items" = final_set,
+     "function_call" = functioncall,
+     "digits" = ifelse(is.null(digits), 3, digits)
+     )
   
-  # apply rounding and get the composite index columns
-  out <- lapply(out, function(inner_list) {
-    lapply(inner_list, function(df) {
-      df <- df[, 5:8]
-      round(df, digits)
-    })
-  })
-  AI_ratios <- round(AI_ratios, digits)
-  
-  out <- c(list("AI_ratios" = AI_ratios), out)
-  
-  ###class(out) <- "itemdeletion"
+  class(out) <- "itemdeletion"
   return(out)
 }

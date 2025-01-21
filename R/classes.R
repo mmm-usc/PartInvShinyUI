@@ -11,8 +11,8 @@ dashes <-
 
 summary_print <- function(x, ...) {
   rownames(x) <- c("True Positive", "False Positive", "True Negative",
-                        "False Negative",  "Proportion Selected",
-                        "Success Ratio", "Sensitivity", "Specificity")
+                   "False Negative", "Proportion Selected",
+                   "Success Ratio", "Sensitivity", "Specificity")
   print(round(x, digits = 3))
 }
 
@@ -173,18 +173,22 @@ print.PartInvList <- function(x, ...) {
 
 setClass("itemdeletion",
   representation(
-    h_aggregate_par = "matrix",
-    delta_h_str_par_aggregate =  "matrix",
-    AI = "matrix",
-    deltaREf = "matrix",
-    h_R_Ef = "matrix",
-    delta_h_str_vs_par = "matrix",
-    str_vs_par = "list",
-    aggregate = "matrix",
-    h_aggregate_str_par = "matrix",
-    Ref_foc = "PartInvList",
-    PartInv = "PartInvList",
-    return_items = "list"
+    AI_ratios = "data.frame",
+    ACAI = "list",
+    h_acai_p = "list",
+    h_acai_s_p = "list",
+    delta_h_acai_s_p =  "list",
+    h_R_Ef = "list",
+    delta_h_R_Ef = "list",
+    delta_h_str_vs_par = "list",
+    #str_vs_par = "list",
+   # aggregate = "matrix",
+    #h_aggregate_str_par = "matrix",
+    #Ref_foc = "PartInvList",
+   # PartInv = "PartInvList",
+    items = "vector",
+    function_call = "call",
+    digits = "numeric"
     )
 )
 
@@ -216,25 +220,33 @@ setClass("itemdeletion",
 #' print(multi_dim)
 #'@export
 print.itemdeletion <- function(x, ...) {
-  item_set <- x$return_items
-  cat(paste0(stars, "\nAGGREGATE CLASSIFICATION ACCURACY INDICES (CAI*)\n",
-             stars))
-  cat("\nAggregate CAI under PFI computed for item subsets:\n")
-  print(round(x$`ACAI`[c(1, item_set + 1), , drop = FALSE], 3))
-  cat("\nImpact of deleting an item on aggregate CAI under PFI:\n")
-  print(round(x$`h ACAI (deletion)`[c(item_set), , drop = FALSE], 3))
-  cat(paste0("\n", stars, "\nAdverse Impact (AI) ratio for item subsets by 
-             invariance condition:\n", stars, "\n"))
-  print(round(x$AI[c(1, item_set + 1), , drop = FALSE], 3))
-  cat(paste0("\n", stars, "\nCOMPARING CAI FOR REFERENCE AND (EXPECTED) FOCAL
-             GROUPS\n", stars))
+  digits <- x$digits
+  item_set <- x$items
+  # apply rounding and get the composite index columns
+  x <- c(x[1],
+              lapply(x[-c(1, 10:12)], function(inner_list) {
+                lapply(inner_list, function(df) {
+                  df <- df[, 5:8]
+                  round(df, digits)
+                  })
+                }),
+            list(x[10:12]))
+  x$AI <- round(x$AI, digits)
+  cat(paste0("\n", stars, "\nAdverse Impact (AI) ratios under partial invariance by group\n", stars, "\n"))
+  print(x$AI[item_set, -1])
+  cat("\n   (Note: AI ratios equal 1 under strict invariance by definition.)\n")
+  cat(paste0(stars, "\nAGGREGATE CLASSIFICATION ACCURACY INDICES (CAI*)\n", stars))
+  cat("\nAggregate CAI (CAI*) under partial invariance:\n")
+  print_dfs_from_list(x$ACAI, c("Full", item_set) )
+  cat("\nImpact of deleting an item on aggregate CAI (CAI*) under partial invariance:\n")
+  print_dfs_from_list(x$h_acai_p, item_set)
+  cat(paste0("\n", stars, "\nCOMPARING CAI FOR REFERENCE AND (EXPECTED) FOCAL GROUPS\n", stars))
   cat("\nDiscrepancy between CAI of reference vs. Efocal groups under PFI:\n")
-  print(round(x$`h CAI Ref-EF`[c(1, item_set + 1), 5:8, drop = FALSE], 3))
-  cat(paste0(dashes, "\nImpact of deleting an item on the discrepancy between
-             CAI of\nreference vs. Efocal groups under PFI:\n"))
-  print(round(x$`delta h CAI Ref-EF (deletion)`[c(item_set), 5:8,
-                                                drop = FALSE], 3))
-  invisible(NULL)
+  print_dfs_from_list(x$h_R_Ef, c("r_Ef", paste0("r_Ef", item_set))) 
+  cat(paste0(dashes, "\nImpact of deleting an item on the discrepancy between observed CAI for the 
+reference group and expected CAI for the focal groups (Efocal):\n"))
+   print_dfs_from_list(x$delta_h_R_Ef, item_set)
+   invisible(NULL)
 }
 
 # register the custom print method for the itemdeletion class
@@ -269,51 +281,51 @@ setMethod("print", "itemdeletion", print.itemdeletion)
 #' summary(multi_dim)
 #'@export
 summary.itemdeletion <- function(object, ...) {
-  item_set <- object$return_items
-  cat(paste0(stars, "\nAGGREGATE CLASSIFICATION ACCURACY INDICES (CAI*)\n",
-             stars))
-  cat("\nAggregate CAI computed for item subsets:\n")
-  print(round(object$`ACAI`[c(1, item_set + 1), , drop = FALSE], 3))
-  cat("\nImpact of deleting an item on aggregate CAI:\n")
-  print(round(object$`h ACAI (deletion)`[c(item_set), , drop = FALSE], 3))
-  cat(paste0(dashes, "\nDiscrepancy between aggregate CAI under SFI vs. PFI:
-             \n"))
-  print(round(object$`h ACAI SFI-PFI`[c(1, item_set + 1), , drop = FALSE], 3))
-  cat("\nImpact of deleting an item on the discrepancy between aggregate CAI 
-      under \nSFI vs. PFI:\n")
-  print(round(object$`delta h ACAI SFI-PFI (deletion)`[c(item_set), ,
-                                                       drop = FALSE], 3))
-  cat(paste0("\n", stars, "\nAdverse Impact (AI) ratio for item subsets by 
-             invariance condition:\n", stars, "\n"))
-  print(round(object$AI[c(1, item_set + 1), , drop = FALSE], 3))
-  cat(paste0("\n", stars, "\nCOMPARING CAI FOR REFERENCE AND (EXPECTED) FOCAL 
-             GROUPS\n", stars))
-  cat("\nDiscrepancy between CAI of reference vs. Efocal groups:\n")
-  print(round(object$`h CAI Ref-EF`[c(1, item_set + 1), , drop = FALSE], 3))
-  cat(paste0(dashes, "\nImpact of deleting an item on the discrepancy between 
-             CAI of reference \nvs. Efocal groups:\n"))
-  print(round(object$`delta h CAI Ref-EF (deletion)`[c(item_set), ,
-                                                     drop = FALSE], 3))
-  cat(paste0("\n", stars, "\nCOMPARING CAI UNDER STRICT AND PARTIAL FACTORIAL
-             INVARIANCE\n", stars))
-  cat("\nDiscrepancy between CAI under SFI vs. PFI for the reference group:\n")
-  print(round(object$`h CAI SFI-PFI`[[1]][c(1, item_set + 1), , drop = FALSE],
-              3))
-  cat("\nDiscrepancy between CAI under SFI vs. PFI for the focal group:\n")
-  print(round(object$`h CAI SFI-PFI`[[2]][c(1, item_set + 1), , drop = FALSE],
-              3))
+  item_set <- object$items
+  digits <- object$digits
+  # apply rounding and get the composite index columns
+  object <- c(object[1],
+         lapply(object[-c(1, 10:12)], function(inner_list) {
+           lapply(inner_list, function(df) {
+             df <- df[, 5:8]
+             round(df, digits)
+           })
+         }),
+         list(object[10:12]))
+ 
+  cat(paste0("\n", stars, "\nAdverse Impact (AI) ratios for by invariance condition and group:\n", stars, "\n"))
+  object$AI <- round(object$AI, digits)
+  print(object$AI[item_set,])
+  
+  cat("\nAggregate CAI under PFI computed for item subsets:\n")
+  lapply(object$ACAI, FUN = function(y) print(y[c("Full", item_set),]))
+  cat("\nImpact of deleting an item on aggregate CAI under PFI:\n")
+  lapply(object$h_acai_p, FUN = function(y) print(y[item_set,]))
+  cat(paste0(dashes, "\nDiscrepancy between aggregate CAI under SFI vs. PFI: \n"))
+  lapply(object$h_acai_s_p, FUN = function(y) print(y[c("Full", item_set),]))
+  cat("\nImpact of deleting an item on the discrepancy between ACAI under SFI vs. PFI:\n")
+  lapply(object$delta_h_acai_s_p, FUN = function(y) print(y[item_set,]))
+  cat(paste0("\n", stars, "\nCOMPARING CAI FOR REFERENCE AND (EXPECTED) FOCAL GROUPS\n", stars))
+  cat("\nDiscrepancy between CAI of reference vs. Efocal groups under PFI:\n")
+  lapply(object$h_R_Ef, FUN = function(y) print(y[c("r_Ef", paste0("r_Ef", item_set)),]))
+  cat(paste0(dashes, "\nImpact of deleting an item on the discrepancy between observed CAI for the 
+reference group and expected CAI for the focal groups (Efocal):\n"))
+  lapply(object$delta_h_R_Ef, FUN = function(y) print(y[item_set,]))
+  cat("\nDiscrepancy between CAI under SFI vs. PFI:\n")
+  lapply(object$h_s_p, FUN = function(y) print(y[c("Full", item_set),]))
   cat(paste0(dashes, "\nImpact of deleting an item on the discrepancy between
              CAI under SFI \nvs. PFI for the reference group:\n"))
-  print(round(object$`delta h SFI-PFI (deletion)`[[1]][c(item_set), ,
-                                                       drop = FALSE], 3))
-  cat("\nImpact of deleting an item on the discrepancy between CAI under SFI 
-      \nvs. PFI for the focal group:\n")
-  print(round(object$`delta h SFI-PFI (deletion)`[[2]][c(item_set), ,
-                                                       drop = FALSE], 3))
-  print(object$`h SFI-PFI by groups`$reference)
-  print(object$`h SFI-PFI by groups`$focal)
-  print(object$PartInv$strict)
-  print(object$PartInv$partial)
+  lapply(object$delta_h_s_p, FUN = function(y) print(y[item_set,]))
+  
+  
+  # cat("\nImpact of deleting an item on the discrepancy between CAI under SFI 
+  #     \nvs. PFI for the focal group:\n")
+  # print(round(object$`delta h SFI-PFI (deletion)`[[2]][c(item_set), ,
+  #                                                      drop = FALSE], 3))
+  # print(object$`h SFI-PFI by groups`$reference)
+  # print(object$`h SFI-PFI by groups`$focal)
+  # print(object$PartInv$strict)
+  # print(object$PartInv$partial)
 }
 # register the custom summary method for the itemdeletion class
 setMethod("summary", "itemdeletion", summary.itemdeletion)

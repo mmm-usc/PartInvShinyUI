@@ -1,9 +1,11 @@
-create_list_of_dfs <- function(ls_len, ncol, nrow, df_cn, df_rn) {
-  lapply(seq_len(ls_len), function(x) {
+create_list_of_dfs <- function(ls_len, ncol, nrow, df_cn, df_rn, groups) {
+  lst <- lapply(seq_len(ls_len), function(x) {
     df <- data.frame(matrix(NA, ncol = ncol, nrow = nrow))
     colnames(df) <- df_cn; rownames(df) <- df_rn
     df
   })
+  names(lst) <- groups
+  lst
 }
 
 update_rows_in_lists_of_dfs <- function(l1, l2, ind) {
@@ -12,63 +14,89 @@ update_rows_in_lists_of_dfs <- function(l1, l2, ind) {
     df
   }, l1, l2)
 }
-
-
-# Function that performs formatting for various variables to be returned in
-# item_deletion_h
-format_item_del <- function(n_i, l) {
-  # Format stored variables
-  names(l$AI_ratios) <- c("full", paste0("|", c(1:n_i)))
-  rownames(l$AI_ratios) <- c("AI_SFI", "AI_PFI")
-  names(l$h_R_Ef) <-  c("r-Ef", paste0("r-Ef|", c(1:n_i)))
-  names(l$delta_s_p_ref) <- names(l$delta_s_p_foc) <- paste0("SFI, PFI|", 
-                                                             c(1:n_i))
-  names(l$store_str) <- names(l$store_par) <- names(l$s_p_ref_list) <-
-    names(l$s_p_foc_list) <- c("full", paste0("|", c(1:n_i)))
-  names(l$acai_p) <- c("full", paste0("|", c(1:n_i)))
-  names(l$h_acai_p) <- paste0("|", c(1:n_i))
-  rownames(l$h_acai_p) <- rownames(l$h_acai_s_p) <-
-    c("h(PS*)", "h(SR*)", "h(SE*)", "h(SP*)")
-  rownames(l$acai_p) <- c("PS*", "SR*", "SE*", "SP*")
-  rownames(l$delta_h_s_p_acai) <-
-    paste0("\u0394h(", c("h(PS*)", "h(SR*)", "h(SE*)", "h(SP*)"), ")")
-  rownames(l$delta_s_p_ref) <- rownames(l$delta_s_p_foc) <- 
-    rownames(l$delta_h_R_Ef) <-
-    paste0("\u0394h(", c("TP", "FP", "TN", "FN", "PS", "SR", "SE", "SP"), ")")
-  rownames(l$h_R_Ef) <- rownames(l$h_s_p_ref) <- rownames(l$h_s_p_foc) <-
-    c("h(TP)", "h(FP)", "h(TN)", "h(FN)", "h(PS)", "h(SR)", "h(SE)", "h(SP)")
-  
-  store_par <- list(outputlist = l$store_par, condition = "partial",
-                    itemset = l$return_items)
-  store_str <- list(outputlist = l$store_str, condition = "strict",
-                    itemset = l$return_items)
-  h_s_p_list_ref <- list(outputlist = l$s_p_ref_list, condition = "ref",
-                                itemset = l$return_items)
-  h_s_p_list_foc <- list(outputlist = l$s_p_foc_list, condition = "foc",
-                                itemset = l$return_items)
-  names(l$h_s_p_ref) <- names(l$h_s_p_foc) <- c("SFI, PFI", 
-                                            paste0("SFI, PFI|", c(1:n_i)))
-  
-  names(l$delta_h_R_Ef) <- paste0("r-Ef|", c(1:n_i))
-  names(l$delta_h_s_p_acai) <- paste0("SFI, PFI|", c(1:n_i))
-  names(l$h_acai_s_p) <- c("SFI, PFI", paste0("SFI, PFI|", c(1:n_i)))
-  
-  acai_p <- as.data.frame(cbind(l$acai_p))
-  h_acai_p <- as.data.frame(l$h_acai_p)
-  
-  return(list("acai_p" = t(acai_p), "h_acai_p" = t(h_acai_p), 
-              "h_acai_s_p" = t(l$h_acai_s_p), 
-              "delta_h_s_p_acai" = t(l$delta_h_s_p_acai), 
-              "AI_ratios" = t(l$AI_ratios), "h_R_Ef" = t(l$h_R_Ef), 
-              "delta_h_R_Ef" = t(l$delta_h_R_Ef), "h_s_p_ref" = t(l$h_s_p_ref), 
-              "h_s_p_foc" = t(l$h_s_p_foc), 
-              "delta_s_p_ref" = t(l$delta_s_p_ref), 
-              "delta_s_p_foc" = t(l$delta_s_p_foc), 
-              "h_s_p_list_ref" = h_s_p_list_ref, 
-              "h_s_p_list_foc" = h_s_p_list_foc, 
-              "store_str" = store_str, "store_par" = store_par))
+# used in classes.R
+print_dfs_from_list <- function(ls, items) {
+  lapply(seq_along(ls), function(i) {
+    cat(paste0("Focal group: ", names(ls)[i], "\n"))  
+    print(ls[[i]][items, ])
+  })
 }
 
+# # Function that performs formatting for various variables to be returned in
+# # item_deletion_h
+# format_item_del <- function(l, item_set, labels) {
+#   
+#   get_rows <- function(ls, del_only = TRUE) {
+#     items <- c("Full", item_set)
+#     if (del_only) items <- items[-1]
+#     lapply(ls, FUN = function(x) x[items,])
+#   }
+#   
+#   # get the subset of items the user requested
+#   l$AI <- l$AI[c("Full", item_set), ]
+#   l$acai_p <- get_rows(l$acai_p, FALSE)
+#   l$h_acai_p <- get_rows(l$h_acai_p, TRUE)
+#   l$h_acai_s_p <- get_rows(l$h_acai_s_p, FALSE)
+#   l$delta_h_acai_s_p <- get_rows(l$delta_h_acai_s_p, TRUE)
+#   l$h_R_Ef <- get_rows(l$h_R_Ef, FALSE) 
+#   l$delta_h_R_Ef <- get_rows(l$delta_h_R_Ef, TRUE)
+#   l$h_s_p <- get_rows(l$h_s_p, FALSE)
+#   l$delta_h_s_p <- get_rows(l$delta_h_s_p, TRUE)
+#   
+#   rownames(l$AI) <- c("full", paste0("|", item_set))
+#   names(l$AI) <- c("AI_SFI", paste0("AI_PFI_", labels))
+#   
+#   
+#    colnames(l$h_acai_p) <- rownames(l$h_acai_s_p) <-
+#     c("h(PS*)", "h(SR*)", "h(SE*)", "h(SP*)")
+#   rownames(l$acai_p) <- c("PS*", "SR*", "SE*", "SP*")
+#   rownames(l$delta_h_s_p_acai) <-
+#     paste0("\u0394h(", c("h(PS*)", "h(SR*)", "h(SE*)", "h(SP*)"), ")")
+#   
+#   rownames(l$h_R_Ef) <-  c("r-Ef", paste0("r-Ef|", item_set))
+#   names(l$delta_s_p_ref) <- names(l$delta_s_p_foc) <- paste0("SFI, PFI|", 
+#                                                              item_set)
+#   names(l$store_str) <- names(l$store_par) <- names(l$s_p_ref_list) <-
+#     names(l$s_p_foc_list) <- c("Full", paste0("|", item_set))
+# 
+#   rownames(l$delta_s_p_ref) <- rownames(l$delta_s_p_foc) <- 
+#     rownames(l$delta_h_R_Ef) <-
+#     paste0("\u0394h(", c("TP", "FP", "TN", "FN", "PS", "SR", "SE", "SP"), ")")
+#   rownames(l$h_R_Ef) <- rownames(l$h_s_p_ref) <- rownames(l$h_s_p_foc) <-
+#     c("h(TP)", "h(FP)", "h(TN)", "h(FN)", "h(PS)", "h(SR)", "h(SE)", "h(SP)")
+#   
+#   store_par <- list(outputlist = l$store_par, condition = "partial",
+#                     itemset = l$return_items)
+#   store_str <- list(outputlist = l$store_str, condition = "strict",
+#                     itemset = l$return_items)
+#   names(l$h_s_p_ref) <- names(l$h_s_p_foc) <- c("SFI, PFI", 
+#                                             paste0("SFI, PFI|", item_set))
+#   
+#   names(l$delta_h_R_Ef) <- paste0("r-Ef|", item_set)
+#   names(l$delta_h_s_p_acai) <- paste0("SFI, PFI|", item_set)
+#   names(l$h_acai_s_p) <- c("SFI, PFI", paste0("SFI, PFI|", item_set))
+#   
+#   acai_p <- as.data.frame(cbind(l$acai_p))
+#   h_acai_p <- as.data.frame(l$h_acai_p)
+#   
+#   return(list("AI" = AI_ratios,
+#               "ACAI" = acai_p,
+#               "h_acai_p" = h_acai_p, #"h ACAI (deletion)"= h_acai_p,
+#               "h_acai_s_p" = h_acai_s_p, #"h ACAI SFI-PFI"= h_acai_s_p,
+#               "delta_h_acai_s_p" = delta_h_acai_s_p, #"delta h ACAI SFI-PFI (deletion)" = delta_h_acai_s_p,
+#               "h_R_Ef" = h_R_Ef, #"h CAI Ref-Ef" = h_R_Ef,
+#               "delta_h_R_Ef" = delta_h_R_Ef, #"delta h CAI Ref-Ef" = delta_h_R_Ef,
+#               "h_s_p" = h_s_p, # "h CAI SFI-PFI" = h_s_p,
+#               "delta_h_s_p" = delta_h_s_p,# "delta h SFI-PFI (deletion)" = delta_h_s_p
+#               #   list("referenceGroup" = delta_h_s_p_R_del_i,
+#               #        "focalGroup(s)" = delta_h_s_p_foc_del_i)
+#               "Items" = substring(final_set, 5),
+#               "function_call" = functioncall,
+#               "digits" = ifelse(is.null(digits), 3, digits)
+#               )
+#          )
+# }
+# 
 
 
 #' @title

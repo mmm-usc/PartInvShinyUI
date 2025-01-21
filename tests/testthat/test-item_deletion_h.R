@@ -50,7 +50,8 @@ test_that("item_deletion_h() handles matrix input", {
                                   pmix_ref = pmix_CESD_r, 
                                   plot_contour = FALSE,
                                   print_formatted = TRUE)
-  expect_equal(CESD_pos, CESD_pos_mat)
+  # outputs should be equivalent aside from the function calls (index 11)
+  expect_equal(CESD_pos[-11], CESD_pos_mat[-11]) 
 })
 
 
