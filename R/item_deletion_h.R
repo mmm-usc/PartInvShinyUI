@@ -89,8 +89,8 @@
 #'     \item{function_call}{Function call to item_deletion_h().}
 #'     \item{digits}{Number of digits utilized for rounding.}
 #' @examples
+#' set.seed(7) 
 #' # Simulate random data to fit a multigroup CFA, invariance across languages
-#' set.seed(7)  
 #' library(lavaan)
 #' sim_m <-
 #'   "f =~ c(1, .7, 1) * x1 + c(.8, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5
@@ -115,34 +115,22 @@
 #' del
 #' 
 #' # Multidimensional example
-#' lambda_matrix <- matrix(0, nrow = 5, ncol = 2)
-#' lambda_matrix[1:2, 1] <- c(.322, .655)
-#' lambda_matrix[3:5, 2] <- c(.398, .745, .543)
-#' multi_dim <- item_deletion_h(propsel = .05, n_dim = 5,
-#'                              weights_item = c(1/4, 1/4, 1/6, 1/6, 1/6),
-#'                              weights_latent = c(0.5, 0.5),
-#'                              alpha_r = c(0, 0),
-#'                              alpha_f = c(-0.3, 0.1),
-#'                              psi_r = matrix(c(1, 0.5, 0.5, 1), nrow = 2),
-#'                              lambda_r = lambda_matrix,
-#'                              nu_r = c(.225, .025, .010, .240, .125),
-#'                              nu_f = c(.225, -.05, .240, -.025, .125),
-#'                              Theta_r = diag(1, 5),
-#'                              Theta_f = diag(c(1, .95, .80, .75, 1)),
-#'                              plot_contour = TRUE)
+#' l_mat <- matrix(0, nrow = 5, ncol = 2)
+#' l_mat[1:2, 1] <- c(.322, .655); l_mat[3:5, 2] <- c(.398, .745, .543)
+#' multi_dim <- item_deletion_h(propsel = .05, n_dim = 5, 
+#'     weights_item = c(1/4, 1/4, 1/6, 1/6, 1/6),
+#'     weights_latent = c(0.5, 0.5), alpha_r = c(0, 0), alpha_f = c(-0.3, 0.1),
+#'     psi_r = matrix(c(1, 0.5, 0.5, 1), nrow = 2), lambda_r = l_mat,
+#'     nu_r = c(.225, .025, .010, .240, .125),
+#'     nu_f = c(.225, -.05, .240, -.025, .125), Theta_r = diag(1, 5),
+#'     Theta_f = diag(c(1, .95, .80, .75, 1)), plot_contour = TRUE)
 #' print(multi_dim)
 #' # Single dimension example
-#' single_dim <- item_deletion_h(propsel = .10,
-#'                                weights_item = c(1, 0.9, 1, 1),
-#'                                weights_latent = 0.9,
-#'                                alpha_r = 0.5,
-#'                                alpha_f = 0,
-#'                                psi_r = 1,
-#'                                lambda_r = c(.3, .5, .9, .7),
-#'                                nu_r = c(.225, .025, .240, .240),
-#'                                nu_f = c(.225, -.05, .240, -.025),
-#'                                Theta_r = diag(.96, 4),
-#'                                n_dim = 1, plot_contour = TRUE)
+#' single_dim <- item_deletion_h(propsel = .10, weights_item = c(1, 0.9, 1, 1),
+#'     weights_latent = 0.9, alpha_r = 0.5, alpha_f = 0, psi_r = 1,
+#'     lambda_r = c(.3, .5, .9, .7), nu_r = c(.225, .025, .240, .240),
+#'     nu_f = c(.225, -.05, .240, -.025), Theta_r = diag(.96, 4), n_dim = 1, 
+#'     plot_contour = TRUE)
 #' print(single_dim)
 #' # Using cfa_fit
 #' HS <- HolzingerSwineford1939
@@ -150,7 +138,6 @@
 #' HS.model <- ' visual  =~ x1 + x2 + x3
 #'               textual =~ x4 + x5 + x6
 #'               speed   =~ x7 + x8 + x9 '
-#' 
 #' fit <- cfa(HS.model, data = HS, group = "sex")
 #' item_deletion_h(cfa_fit = fit, propsel = .05)
 #' @export

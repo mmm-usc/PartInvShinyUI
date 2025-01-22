@@ -39,7 +39,8 @@ NULL
 #' @examples
 #' \dontrun{
 #' set.seed(7)  
-#' cols <- c("salmon1", "lightgreen", "skyblue1", "pink")
+#' # Simulate random data to fit a multigroup CFA, invariance across languages
+#' library(lavaan)
 #' sim_m <-
 #'   "f =~ c(1, .7, 1) * x1 + c(.8, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5
 #'    f ~~ c(1, 1.3, 1.5) * f
@@ -47,10 +48,12 @@ NULL
 #'    x1 ~ c(0, .3, 0) * 1
 #'    x3 ~ c(.3, 0, -.3) * 1
 #'    x1 ~~ c(1, .5, 1) * x1"
-#' dat_sim <- simulateData(sim_m, sample.nobs = c(80, 100, 110))
+#' dat_sim <- simulateData(sim_m, sample.nobs = c(120, 90, 50))
+#' dat_sim$group <- ifelse(dat_sim$group == 1, "English",
+#'                  ifelse(dat_sim$group == 2, "Japanese",
+#'                  ifelse(dat_sim$group == 3, "Swahili", NA)))
 #' fit_sim <- lavaan::cfa(model = sim_m, data = dat_sim, group = "group")
 #' plot_CAI_across_range(cfa_fit = fit_sim)
-#
 #' library(lavaan)
 #' HS <- HolzingerSwineford1939
 #' HS$sex <- as.factor(HS$sex)
@@ -62,7 +65,8 @@ NULL
 #'                  cutoffs_from = 35, cutoffs_to = 50)
 #' # plot only SR under partial invariance for up to 10% selection.
 #' plot_CAI_across_range(fit, pmix = table(HS$sex)/sum(table(HS$sex)), 
-#'     from = 0.01, to = 0.10, cai_names = "SR", mod_names = "par")
+#'     from = 0.01, to = 0.10, cai_names = "SR", mod_names = "par", 
+#'      labels = c("Male", "Female"))
 #' }
 #' @export
 plot_CAI_across_range <- function(cfa_fit,
@@ -166,7 +170,6 @@ plot_CAI_across_range <- function(cfa_fit,
     }  
     # for specifying the index within ls
     num_comb <- length(cai_names) * length(mod_names) + 1 
-    
 
     ind <- 1
 
@@ -198,8 +201,21 @@ plot_CAI_across_range <- function(cfa_fit,
   }
   
   # extract labels
-  labels <- pinv$labels
-  labels2 <- paste(labels, c("(reference)", rep("(focal)", num_g - 1)))
+  if (!is.null(labels)) { # 'labels' was provided
+    if (length(labels) != num_g) {
+      stop("The number of labels does not match the number of groups. Using defaults.")
+      labels <- c("Reference", paste0("Focal_", 1:(num_g - 1)))
+    }
+    lab_text <- "provided"
+  } else {  # 'labels' is null
+    if (!is.null(cfa_fit)) { # user supplied cfa_fit
+      labels <- summary(cfa_fit)$data$group.label
+      lab_text <- "cfa fit object"
+    } else { # user did not supply cfa_fit
+      labels <- c("Reference", paste0("Focal_", 1:(num_g - 1)))
+    }
+  }
+ # labels2 <- paste(labels, c("(reference)", rep("(focal)", num_g - 1)))
 
   rownames(AIs) <- labels[-1]
   colnames(AIs) <- rangeVals
@@ -212,11 +228,7 @@ plot_CAI_across_range <- function(cfa_fit,
   mains <- mains[-1]
   ylabs <- ylabs[-1]
   
-  colorlist <-  c('#000000', '#e6194b', 'lightskyblue', '#f58231',
-                  '#bcf60c', '#fabebe', '#911eb4', '#46f0f0',
-                  '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000',
-                  '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080')
-                   #https://sashamaps.net/docs/resources/20-colors/
+  colorlist <-  colorlist()
   if (!is.null(custom_colors)) { colorlist <- custom_colors }
   
   legends <- c(rep("topright", 2), rep("bottomright", 6))
@@ -225,7 +237,7 @@ plot_CAI_across_range <- function(cfa_fit,
     # iterate over each CAI & invariance condition of interest and produce plots
     for (l in seq_along(ls_names)) {
       
-      l_lab <- labels2
+      l_lab <- labels#labels2
       l_col <- colorlist[1:(num_g)]
       l_lty <- rep(1, num_g)
       
@@ -242,7 +254,6 @@ plot_CAI_across_range <- function(cfa_fit,
         l_lty <- c(l_lty, 3)
       }
 
-      
       lines(rangeVals, ls[[ls_names[l]]][1, ], type = "l", col = colorlist[1], lwd = 1.5)
       for (i in seq_len(num_g - 1)) {
         lines(rangeVals, ls[[ls_names[l]]][i + 1, ], type = "l",
@@ -256,7 +267,7 @@ plot_CAI_across_range <- function(cfa_fit,
     colorlist <- colorlist[-1]
     ylim_u <- ifelse(max(AIs) < 1.5, 1.5, round(max(AIs)))
     
-    l_lab <- labels2[-1]
+    l_lab <- labels[-1]#labels2[-1]
     l_col <- colorlist[1:(num_g - 1)]
     l_lty <- rep(1, num_g - 1)
     l_lwd <- rep(1.5, num_g - 1)

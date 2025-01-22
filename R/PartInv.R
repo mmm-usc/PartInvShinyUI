@@ -94,14 +94,18 @@ NULL
 #' @examples
 #' set.seed(7)  
 #' cols <- c("salmon1", "lightgreen", "skyblue1", "pink")
+#' # Simulate random data to fit a multigroup CFA, invariance across languages
 #' sim_m <-
-#'   "f =~ c(1, .7, 1) * x1 + c(.2, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5
+#'   "f =~ c(1, .7, 1) * x1 + c(.8, 1.1, 1) * x2 + 1 * x3 + 1 * x4 + 1 * x5
 #'    f ~~ c(1, 1.3, 1.5) * f
 #'    f ~  c(0, .5, 1) * 1
 #'    x1 ~ c(0, .3, 0) * 1
 #'    x3 ~ c(.3, 0, -.3) * 1
 #'    x1 ~~ c(1, .5, 1) * x1"
-#' dat_sim <- lavaan::simulateData(sim_m, sample.nobs = c(80, 100, 110))
+#' dat_sim <- lavaan::simulateData(sim_m, sample.nobs = c(120, 90, 50))
+#' dat_sim$group <- ifelse(dat_sim$group == 1, "English",
+#'                  ifelse(dat_sim$group == 2, "Japanese",
+#'                  ifelse(dat_sim$group == 3, "Swahili", NA)))
 #' fit_sim <- lavaan::cfa(model = sim_m, data = dat_sim, group = "group")
 #' PartInv(cfa_fit = fit_sim, propsel = .05, plot_contour = TRUE, 
 #'         custom_colors = cols[1:3], show_mi_result = TRUE)
@@ -114,13 +118,13 @@ NULL
 #'               speed   =~ x7 + x8 + x9 '
 #' fit <- cfa(HS.model, data = HS, group = "sex")
 #' PartInv(fit, propsel = .7, plot_contour = TRUE, show_mi_result = TRUE,
-#'         labels = c("M", "F"))
+#'         labels = c("Male", "Female"))
 #' # Two groups, single dimension
 #' PartInv(cfa_fit = NULL, propsel = .30, weights_item = rep(1, 4),
 #'         alpha = list(0, 0), psi = list(1, 1), 
 #'         lambda = list(rep(1, 4), c(1, 1, .7, .4)),
 #'         nu = list(rep(1, 4), rep(1, 4)), theta = list(diag(1, 4), diag(1, 4)),
-#'         labels = c("Female", "Male"), show_mi_result = TRUE, 
+#'         labels = c("Public", "Private "), show_mi_result = TRUE, 
 #'         plot_contour = TRUE)
 #' # Two groups, two dimensions
 #' l_mat <- matrix(0, nrow = 5, ncol = 2)
