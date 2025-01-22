@@ -4,7 +4,7 @@ NULL
 #' Plot classification accuracy indices at different proportions of selection
 #'   or at different threshold (cutoff) values
 #' 
-#' \code{plotPropselRange} plots classification accuracy indices at different
+#' \code{plot_CAI_across_range} plots classification accuracy indices at different
 #' proportions of selection under partial and strict invariance conditions for 
 #' a given CFA fit.
 #' 
@@ -49,7 +49,7 @@ NULL
 #'    x1 ~~ c(1, .5, 1) * x1"
 #' dat_sim <- simulateData(sim_m, sample.nobs = c(80, 100, 110))
 #' fit_sim <- lavaan::cfa(model = sim_m, data = dat_sim, group = "group")
-#' plotPropselRange(cfa_fit = fit_sim)
+#' plot_CAI_across_range(cfa_fit = fit_sim)
 #
 #' library(lavaan)
 #' HS <- HolzingerSwineford1939
@@ -58,14 +58,14 @@ NULL
 #'               textual =~ x4 + x5 + x6
 #'               speed   =~ x7 + x8 + x9 '
 #' fit <- cfa(HS.model, data = HS, group = "sex")
-#' plotPropselRange(fit, pmix = table(HS$sex) / sum(table(HS$sex)), 
+#' plot_CAI_across_range(fit, pmix = table(HS$sex) / sum(table(HS$sex)), 
 #'                  cutoffs_from = 35, cutoffs_to = 50)
 #' # plot only SR under partial invariance for up to 10% selection.
-#' plotPropselRange(fit, pmix = table(HS$sex)/sum(table(HS$sex)), 
+#' plot_CAI_across_range(fit, pmix = table(HS$sex)/sum(table(HS$sex)), 
 #'     from = 0.01, to = 0.10, cai_names = "SR", mod_names = "par")
 #' }
 #' @export
-plotPropselRange <- function(cfa_fit,
+plot_CAI_across_range <- function(cfa_fit,
                              pmix = NULL,
                              labels = NULL,
                              cai_names = c("PS", "SR", "SE", "SP", "AI"),

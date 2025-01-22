@@ -95,7 +95,7 @@ averages of the input values using \code{pmix}.}
 and focal groups on the plot, where \code{g} is the number of groups. If \code{NULL}
 groups are labeled as 'Reference' and 'Focal_1' through 'Focal_(g-1)'.}
 
-\item{custom_colors}{Optional argument for specifying colors.}
+\item{custom_colors}{Optional argument for specifying group colors.}
 
 \item{reference}{Optional argument for specifying the reference group.
 Currently only functional when cfa_fit is provided. If providing parameter

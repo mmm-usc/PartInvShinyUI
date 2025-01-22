@@ -427,3 +427,13 @@ is_symmetric_posdef <- function(x, tol = 1e-08) {
   eigenvalues <- eigen(x, only.values = TRUE)$values
   all(eigenvalues >= tol)
 }
+
+
+colorlist <- function() {
+  c('#e6194b', '#4363d8', '#3cb44b', '#ffe119', '#f58231', 
+    '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', 
+    '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', 
+    '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', 
+    '#ffffff', '#000000') 
+  #https://sashamaps.net/docs/resources/20-colors/
+}

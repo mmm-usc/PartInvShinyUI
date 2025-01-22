@@ -107,12 +107,7 @@ plot.PartInv <- function(x, labels = x[["labels"]],
     }
     x_lim <- range(x_lim); y_lim <- range(y_lim)
     
-    colorlist <-  c('#e6194b', '#4363d8', '#3cb44b', '#ffe119', '#f58231', 
-                    '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', 
-                    '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', 
-                    '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', 
-                    '#ffffff', '#000000') 
-                    #https://sashamaps.net/docs/resources/20-colors/
+    colorlist <- colorlist()
     ltylist <- rep(c('twodash', 'longdash', 'dotdash', 'dashed', 'dotted'), 
                    length.out = n_g)
     if (!is.null(custom_colors)) { colorlist <- custom_colors }

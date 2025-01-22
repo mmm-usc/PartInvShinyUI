@@ -45,7 +45,7 @@ NULL
 #' @param labels A character vector with `g` elements to label the reference
 #'     and focal groups on the plot, where `g` is the number of groups. If `NULL`
 #'     groups are labeled as 'Reference' and 'Focal_1' through 'Focal_(g-1)'.
-#' @param custom_colors Optional argument for specifying colors.
+#' @param custom_colors Optional argument for specifying group colors.
 #' @param reference Optional argument for specifying the reference group.
 #' Currently only functional when cfa_fit is provided. If providing parameter 
 #' estimates instead, reorder estimates such that the first estimates belong to 
@@ -167,9 +167,7 @@ PartInv <- function(cfa_fit = NULL,
                     ...) {
 
   functioncall <- match.call()
-  # for backward compatibility with different input names ####
-  #source(file.path(find.package("unbiasr"), "R", "prep_params.R"))
-  # pl: parameter list after adjustments
+  # make adjustments for formatting and backward compatibility
   pl <- prep_params(
     cfa_fit, propsel, cut_z, weights_item, weights_latent, alpha, psi, lambda, 
     theta, nu, pmix, pmix_ref, plot_contour, labels, n_dim = NULL, 
@@ -191,9 +189,11 @@ PartInv <- function(cfa_fit = NULL,
   weights_item <- pl$weights_item
   labels <- pl$labels
 
-  out <- compute_cai(weights_item, weights_latent, alpha, psi, lambda, nu,
-    theta, pmix, propsel, labels, cut_z, num_g = num_g, is_mi = FALSE
-  )
+  params <- list(weights_item = weights_item, weights_latent = weights_latent, 
+                 alpha = alpha, psi = psi, lambda = lambda, nu = nu, 
+                 theta = theta, pmix = pmix, propsel = propsel, labels = labels, 
+                 cut_z = cut_z, num_g = num_g)
+  out <- do.call(compute_cai, params)
 
   if (out$propsel <= 0.01) warning("Proportion selected is 1% or less.")
 
@@ -204,24 +204,19 @@ PartInv <- function(cfa_fit = NULL,
   out[["ai_ratio"]] <- ai_ratio
 
   if (show_mi_result) {
-    pop_weights <- pmix
-    lambda_avg <- .weighted_average_list(lambda, weights = pop_weights)
-    nu_avg <- .weighted_average_list(nu, weights = pop_weights)
-    theta_avg <- .weighted_average_list(theta, weights = pop_weights)
+    lambda_avg <- .weighted_average_list(lambda, weights = pmix)
+    nu_avg <- .weighted_average_list(nu, weights = pmix)
+    theta_avg <- .weighted_average_list(theta, weights = pmix)
 
-    lambda_avg_g <- replicate(num_g, lambda_avg, simplify = FALSE)
-    nu_avg_g <- replicate(num_g, nu_avg, simplify = FALSE)
-    theta_avg_g <- replicate(num_g, theta_avg, simplify = FALSE)
-
-    out_mi <- compute_cai(weights_item, weights_latent, alpha, psi,
-      lambda_avg_g, nu_avg_g, theta_avg_g,
-      pmix, propsel, labels, cut_z, num_g = num_g, 
-      is_mi = TRUE
-    )
+    params[["lambda"]] <- replicate(num_g, lambda_avg, simplify = FALSE)
+    params[["nu"]] <- replicate(num_g, nu_avg, simplify = FALSE)
+    params[["theta"]] <- replicate(num_g, theta_avg, simplify = FALSE)
+    
+    out_mi <- do.call(compute_cai, params)   
     colnames(out_mi$summary) <- labels
     names(out_mi) <- paste0(names(out_mi), "_mi")
     
-    # calculate AI ratio for strict invariance (should be 1)   
+    # calculate AI ratio for strict invariance   
     ai_ratio_mi <- as.data.frame(
       out_mi$summary[5, (num_g + 1):(num_g + num_g - 1)] / out_mi$summary[5, 1])
     names(ai_ratio_mi) <- labels[-1]
@@ -254,7 +249,4 @@ PartInvMulti_we <- function(...)
   .Deprecated("PartInv")
   # PartInv(...)
 }
-
-#if (is.null(pmix)) pmix <- as.matrix(c(rep(1 / num_g, num_g)), ncol = num_g)
-# pmix <- as.vector(pmix)
 
