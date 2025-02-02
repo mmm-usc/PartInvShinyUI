@@ -34,7 +34,10 @@ NULL
 #' @param add_AI_threshold_lines Whether horizontal lines at AI = 1 and AI = 0.8
 #'     should be plotted. `TRUE` by default.
 #' @param add_vertical_threshold_at Adds a vertical line at a specified threshold
-#'        value for easier comparison. `NULL` by default.    
+#'     value for easier comparison. `NULL` by default.  
+#' @param plot_only_g Optional argument, vector of strings specifying the labels
+#'     of the subset of groups to be plotted. The reference group is always 
+#'     plotted. Ignored if all elements do not appear in `labels`.
 #' @param ... Additional arguments.
 #' @examples
 #' \dontrun{
@@ -54,6 +57,9 @@ NULL
 #'                  ifelse(dat_sim$group == 3, "Swahili", NA)))
 #' fit_sim <- lavaan::cfa(model = sim_m, data = dat_sim, group = "group")
 #' plot_CAI_across_range(cfa_fit = fit_sim)
+#' plot_CAI_across_range(cfa_fit = fit_sim, custom_colors = c("blue", "pink", "red"))
+#' plot_CAI_across_range(cfa_fit = fit_sim, plot_only_g = "Japanese")
+#' 
 #' library(lavaan)
 #' HS <- HolzingerSwineford1939
 #' HS$sex <- as.factor(HS$sex)
@@ -82,7 +88,8 @@ plot_CAI_across_range <- function(cfa_fit,
                              custom_colors = NULL, 
                              reference = NULL, 
                              add_AI_threshold_lines = TRUE, 
-                             add_vertical_threshold_at = NULL, ...
+                             add_vertical_threshold_at = NULL,
+                             plot_only_g = NULL, ...
                              ) {
   stopifnot("cai_names can only take the following values: PS, SR, SE, SP, AI." =
               (all(cai_names %in% c("PS", "SR", "SE", "SP", "AI"))))
@@ -215,7 +222,6 @@ plot_CAI_across_range <- function(cfa_fit,
       labels <- c("Reference", paste0("Focal_", 1:(num_g - 1)))
     }
   }
- # labels2 <- paste(labels, c("(reference)", rep("(focal)", num_g - 1)))
 
   rownames(AIs) <- labels[-1]
   colnames(AIs) <- rangeVals
@@ -228,17 +234,26 @@ plot_CAI_across_range <- function(cfa_fit,
   mains <- mains[-1]
   ylabs <- ylabs[-1]
   
-  colorlist <-  colorlist()
+  colorlist <- colorlist()
   if (!is.null(custom_colors)) { colorlist <- custom_colors }
+  ind <- 1:num_g
   
   legends <- c(rep("topright", 2), rep("bottomright", 6))
+  
+  labels_temp <- labels # duplicate
+  # if the user specified a subset of groups to be plotted and the labels match
+  if (!is.null(plot_only_g) && all(plot_only_g %in% labels)) {
+    labels <- unique(c(labels_temp[1], plot_only_g)) # ensure reference is included
+    num_g <- length(labels)
+    ind <- which(labels_temp %in% labels)
+  }
+  colorlist <- colorlist[ind]
   
   if (!is.null(cai_names)) {
     # iterate over each CAI & invariance condition of interest and produce plots
     for (l in seq_along(ls_names)) {
-      
-      l_lab <- labels#labels2
-      l_col <- colorlist[1:(num_g)]
+      l_lab <- labels
+      l_col <- colorlist
       l_lty <- rep(1, num_g)
       
       plot(0, type = "l", ylim = c(0, 1), xlim = c(min(rangeVals), max(rangeVals)),
@@ -263,12 +278,14 @@ plot_CAI_across_range <- function(cfa_fit,
              lwd = 1.5, cex = 0.8)  
     }
   }
-  if (plotAIs) {
+  # if the used wants AI plots and if the only group specified to be 
+  # plotted isn't the reference group 
+  if (plotAIs && !(num_g == 1 && labels[1]==labels_temp[1])) {
     colorlist <- colorlist[-1]
     ylim_u <- ifelse(max(AIs) < 1.5, 1.5, round(max(AIs)))
     
-    l_lab <- labels[-1]#labels2[-1]
-    l_col <- colorlist[1:(num_g - 1)]
+    l_lab <- labels[-1]
+    l_col <- colorlist
     l_lty <- rep(1, num_g - 1)
     l_lwd <- rep(1.5, num_g - 1)
     
