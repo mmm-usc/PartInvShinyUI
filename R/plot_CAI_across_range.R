@@ -247,13 +247,13 @@ plot_CAI_across_range <- function(cfa_fit,
     num_g <- length(labels)
     ind <- which(labels_temp %in% labels)
   }
-  colorlist <- colorlist[ind]
+  #colorlist <- colorlist[ind]
   
   if (!is.null(cai_names)) {
     # iterate over each CAI & invariance condition of interest and produce plots
     for (l in seq_along(ls_names)) {
       l_lab <- labels
-      l_col <- colorlist
+      l_col <- colorlist[ind]
       l_lty <- rep(1, num_g)
       
       plot(0, type = "l", ylim = c(0, 1), xlim = c(min(rangeVals), max(rangeVals)),
@@ -270,9 +270,9 @@ plot_CAI_across_range <- function(cfa_fit,
       }
 
       lines(rangeVals, ls[[ls_names[l]]][1, ], type = "l", col = colorlist[1], lwd = 1.5)
-      for (i in seq_len(num_g - 1)) {
-        lines(rangeVals, ls[[ls_names[l]]][i + 1, ], type = "l",
-              lwd = 1.5, col = colorlist[i + 1])
+      for (i in ind[-1]) {
+        lines(rangeVals, ls[[ls_names[l]]][i, ], type = "l",
+              lwd = 1.5, col = colorlist[i])
       }
       legend(legends[l], legend = l_lab, col = l_col, lty = l_lty,
              lwd = 1.5, cex = 0.8)  
@@ -281,11 +281,11 @@ plot_CAI_across_range <- function(cfa_fit,
   # if the used wants AI plots and if the only group specified to be 
   # plotted isn't the reference group 
   if (plotAIs && !(num_g == 1 && labels[1]==labels_temp[1])) {
-    colorlist <- colorlist[-1]
+    #colorlist <- colorlist[-1]
     ylim_u <- ifelse(max(AIs) < 1.5, 1.5, round(max(AIs)))
     
     l_lab <- labels[-1]
-    l_col <- colorlist
+    l_col <- colorlist[ind][-1]
     l_lty <- rep(1, num_g - 1)
     l_lwd <- rep(1.5, num_g - 1)
     
@@ -300,13 +300,13 @@ plot_CAI_across_range <- function(cfa_fit,
       l_lty <- c(l_lty, 2, 2)
       l_lwd <- c(l_lwd, 0.8, 0.8)
     }
-    lines(rangeVals, AIs[1,], type = "l", col = colorlist[1], lwd = 1.5)
-    if (num_g > 2) {
-      for (i in seq(from = 2, to = num_g - 1)) {
-        lines(rangeVals, AIs[i,], type = "l",
+    #lines(rangeVals, AIs[1,], type = "l", col = colorlist[1], lwd = 1.5)
+    #if (num_g > 2) {
+      for (i in ind[-1]) {
+        lines(rangeVals, AIs[labels_temp[i],], type = "l",
               lwd = 1.5, col = colorlist[i])
       }
-    }
+    #}
     legend("bottomright", legend = l_lab, col = l_col, lty = l_lty, 
            lwd = l_lwd, cex = 0.8)  
   }
