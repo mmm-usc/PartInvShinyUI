@@ -59,7 +59,7 @@ NULL
 #' plot_CAI_across_range(cfa_fit = fit_sim)
 #' plot_CAI_across_range(cfa_fit = fit_sim, custom_colors = c("blue", "pink", "red"))
 #' plot_CAI_across_range(cfa_fit = fit_sim, plot_only_g = "Japanese")
-#' 
+#' plot_CAI_across_range(cfa_fit = fit_sim, add_vertical_threshold_at = 0.07)
 #' library(lavaan)
 #' HS <- HolzingerSwineford1939
 #' HS$sex <- as.factor(HS$sex)
@@ -264,9 +264,9 @@ plot_CAI_across_range <- function(cfa_fit,
       
       if (!is.null(add_vertical_threshold_at)) {
         abline(v = add_vertical_threshold_at, col = "gray", lty = 3)
-        l_lab <- c(l_lab, "Cutoff")
-        l_col <- c(l_col, "gray")
-        l_lty <- c(l_lty, 3)
+        #l_lab <- c(l_lab, "Cutoff")
+        # l_col <- c(l_col, "gray")
+        #l_lty <- c(l_lty, 3)
       }
 
       lines(rangeVals, ls[[ls_names[l]]][1, ], type = "l", col = colorlist[1], lwd = 1.5)
